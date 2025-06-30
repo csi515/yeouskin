@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -80,15 +80,17 @@ function App() {
         <RoutingHandler />
         <Layout>
           <ErrorBoundary fallback={<ErrorFallback />}>
-            <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/customers" element={<CustomerManagement />} />
-              <Route path="/products" element={<ProductManagement />} />
-              <Route path="/appointments" element={<AppointmentManagement />} />
-              <Route path="/finance" element={<FinanceManagement />} />
-              <Route path="/settings" element={<Settings />} />
-            </Routes>
+            <Suspense fallback={<LoadingFallback />}>
+              <Routes>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/customers" element={<CustomerManagement />} />
+                <Route path="/products" element={<ProductManagement />} />
+                <Route path="/appointments" element={<AppointmentManagement />} />
+                <Route path="/finance" element={<FinanceManagement />} />
+                <Route path="/settings" element={<Settings />} />
+              </Routes>
+            </Suspense>
           </ErrorBoundary>
         </Layout>
       </Router>

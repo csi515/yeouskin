@@ -89,35 +89,6 @@ const CustomerManagement: React.FC = () => {
     }
   };
 
-  // 샘플 데이터 초기화
-  const initializeSampleData = async () => {
-    if (!window.confirm('샘플 데이터로 초기화하시겠습니까? 기존 데이터는 삭제됩니다.')) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-      
-      customerCsvManager.saveToStorage(sampleCustomers);
-      appointmentCsvManager.saveToStorage(sampleAppointments);
-      productCsvManager.saveToStorage(sampleProducts);
-      purchaseCsvManager.saveToStorage([]); // 빈 배열로 초기화
-
-      setCustomers(sampleCustomers);
-      setAppointments(sampleAppointments);
-      setProducts(sampleProducts);
-      setPurchases([]);
-      
-      alert('샘플 데이터가 초기화되었습니다.');
-    } catch (error) {
-      console.error('샘플 데이터 초기화 오류:', error);
-      setError('샘플 데이터 초기화 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // 검색 필터링
   useEffect(() => {
     const filtered = customers.filter(customer =>
@@ -151,7 +122,7 @@ const CustomerManagement: React.FC = () => {
   };
 
   // 고객 수정
-  const handleEditCustomer = async (customer: Customer, appointments: Appointment[]) => {
+  const handleEditCustomer = async (customer: Customer, appointments: Appointment[], purchaseItems: Array<{productId: string, quantity: number}>) => {
     try {
       const success = customerCsvManager.updateByIdInStorage(customer.id, customer);
       if (success) {
@@ -173,6 +144,36 @@ const CustomerManagement: React.FC = () => {
             setAppointments(prev => prev.map(a => a.id === appointment.id ? appointment : a));
           }
         }
+
+        // 구매 내역 업데이트
+        const existingPurchases = purchases.filter(p => p.customerId === customer.id);
+        
+        // 기존 구매 내역 삭제
+        for (const purchase of existingPurchases) {
+          purchaseCsvManager.deleteByIdFromStorage(purchase.id);
+        }
+        
+        // 새로운 구매 내역 추가
+        for (const item of purchaseItems) {
+          if (item.productId && item.quantity > 0) {
+            const product = products.find(p => p.id === item.productId);
+            if (product) {
+              const newPurchase: Purchase = {
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                customerId: customer.id,
+                productId: item.productId,
+                quantity: item.quantity,
+                purchaseDate: new Date().toISOString(),
+                totalPrice: product.price * item.quantity,
+              };
+              purchaseCsvManager.appendToStorage(newPurchase);
+            }
+          }
+        }
+        
+        // 구매 내역 다시 로드
+        const updatedPurchases = purchaseCsvManager.readFromStorage();
+        setPurchases(updatedPurchases);
         
         setIsEditModalOpen(false);
         setEditingCustomer(null);
@@ -299,12 +300,6 @@ const CustomerManagement: React.FC = () => {
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold text-gray-900">고객 관리</h1>
-          <button
-            onClick={initializeSampleData}
-            className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm"
-          >
-            샘플 데이터 초기화
-          </button>
         </div>
         
         {/* 검색 및 추가 버튼 */}
@@ -407,7 +402,7 @@ const CustomerManagement: React.FC = () => {
             setIsEditModalOpen(false);
             setEditingCustomer(null);
           }}
-          onSubmit={(customer, appointments) => handleEditCustomer(customer, appointments)}
+          onSubmit={(customer, appointments, purchaseItems) => handleEditCustomer(customer, appointments, purchaseItems)}
         />
       )}
     </div>

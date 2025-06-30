@@ -43,7 +43,7 @@ class ErrorBoundary extends Component<Props, State> {
             >
               페이지 새로고침
             </button>
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {this.state.error && (
               <details className="mt-4 text-left">
                 <summary className="cursor-pointer text-sm text-gray-500">오류 상세 정보</summary>
                 <pre className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded overflow-auto">

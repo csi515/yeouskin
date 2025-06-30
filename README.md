@@ -16,19 +16,25 @@
 ```
 src/
 ├── components/        # 공통 UI 컴포넌트
-│   └── Sidebar.tsx   # 사이드바 네비게이션
+│   ├── Sidebar.tsx   # 사이드바 네비게이션
+│   ├── Layout.tsx    # 레이아웃 컴포넌트
+│   ├── ErrorBoundary.tsx # 에러 처리
+│   └── ...           # 기타 컴포넌트
 ├── pages/            # 페이지 컴포넌트
 │   ├── Dashboard.tsx
 │   ├── CustomerManagement.tsx
 │   ├── AppointmentManagement.tsx
 │   ├── FinanceManagement.tsx
-│   ├── PointManagement.tsx
+│   ├── ProductManagement.tsx
 │   └── Settings.tsx
 ├── types/            # TypeScript 타입 정의
 │   └── index.ts
 ├── utils/            # 유틸리티 함수
-│   └── csvHandler.ts
-├── data/             # CSV 데이터 파일
+│   ├── csvHandler.ts
+│   ├── finance.ts
+│   └── supabase.ts
+├── data/             # 샘플 데이터
+│   └── sampleData.ts
 ├── App.tsx           # 메인 앱 컴포넌트
 ├── main.tsx          # 앱 진입점
 ├── App.css           # 앱 스타일
@@ -41,7 +47,9 @@ src/
 - **Styling**: Tailwind CSS
 - **Build Tool**: Vite
 - **Routing**: React Router DOM
-- **Data Management**: CSV 파일 기반 로컬 저장
+- **Data Management**: LocalStorage + Supabase (선택적)
+- **Date Handling**: date-fns
+- **Calendar**: react-calendar
 
 ## 📦 설치 및 실행
 
@@ -72,11 +80,12 @@ npm run preview
 ## 🔧 개발
 
 ### 스크립트
-- `npm run dev`: 개발 서버 실행 (포트 3000)
+- `npm run dev`: 개발 서버 실행 (포트 3001)
 - `npm run build`: 프로덕션 빌드
 - `npm run preview`: 빌드된 앱 미리보기
 - `npm run lint`: ESLint 검사
 - `npm run type-check`: TypeScript 타입 검사
+- `npm run server`: 백엔드 서버 실행
 
 ### 코드 구조
 - **컴포넌트**: 재사용 가능한 UI 컴포넌트
@@ -86,24 +95,49 @@ npm run preview
 
 ## 📊 데이터 관리
 
-시스템은 CSV 파일을 사용하여 데이터를 로컬에 저장합니다:
-- `src/data/customers.csv`: 고객 정보
-- `src/data/appointments.csv`: 예약 정보
-- `src/data/services.csv`: 서비스 정보
-- `src/data/finance.csv`: 재무 데이터
+시스템은 LocalStorage를 사용하여 데이터를 로컬에 저장합니다:
+- 고객 정보 (customers)
+- 예약 정보 (appointments)
+- 상품 정보 (products)
+- 재무 데이터 (finance)
+
+### Supabase 연동 (선택사항)
+
+Supabase를 사용하려면 환경변수를 설정하세요:
+```bash
+VITE_SUPABASE_URL=your-supabase-url
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
 
 ## 🎨 UI/UX
 
 - **반응형 디자인**: 모바일, 태블릿, 데스크톱 지원
-- **다크/라이트 모드**: 사용자 선호도에 따른 테마 변경
 - **직관적 네비게이션**: 사이드바 기반 메뉴 구조
 - **모던 UI**: Tailwind CSS 기반 깔끔한 디자인
+- **에러 처리**: ErrorBoundary를 통한 안정적인 에러 처리
+- **로딩 상태**: 사용자 친화적인 로딩 UI
 
 ## 🔒 보안
 
 - 모든 데이터는 로컬에 저장됩니다
-- 외부 API 의존성 없음
-- 개인정보 보호 준수
+- Supabase 사용 시 RLS(Row Level Security) 적용
+- 환경변수를 통한 민감한 정보 관리
+
+## 🚀 배포
+
+### Render 배포
+
+1. GitHub 리포지토리를 Render에 연결
+2. Build Command: `npm run build`
+3. Publish Directory: `dist`
+4. Environment Variables 설정 (필요시)
+
+### Vercel 배포
+
+1. Vercel에 GitHub 리포지토리 연결
+2. Framework Preset: Vite
+3. Build Command: `npm run build`
+4. Output Directory: `dist`
 
 ## 📝 라이선스
 
@@ -119,4 +153,12 @@ MIT License
 
 ## 📞 지원
 
-문제가 발생하거나 질문이 있으시면 이슈를 생성해주세요. 
+문제가 발생하거나 질문이 있으시면 이슈를 생성해주세요.
+
+## 🔄 업데이트 로그
+
+### v1.0.0
+- 초기 CRM 시스템 구현
+- 고객, 예약, 재무, 상품 관리 기능
+- 반응형 UI 및 에러 처리
+- Supabase 연동 지원 

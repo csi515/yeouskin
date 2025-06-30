@@ -19,6 +19,17 @@ const CalendarPanel: React.FC<CalendarPanelProps> = ({
   products,
   onDateSelect,
 }) => {
+  // 날짜 선택 핸들러
+  const handleDateSelect = (value: any) => {
+    if (value instanceof Date) {
+      console.log('달력에서 선택된 날짜:', value);
+      onDateSelect(value);
+    } else if (Array.isArray(value) && value.length > 0 && value[0] instanceof Date) {
+      console.log('달력에서 선택된 날짜:', value[0]);
+      onDateSelect(value[0]);
+    }
+  };
+
   // 달력 타일에 예약 요약 표시
   const tileContent = ({ date }: { date: Date }) => {
     const dayAppointments = appointments.filter(a => isSameDay(parseISO(a.datetime), date));
@@ -57,7 +68,7 @@ const CalendarPanel: React.FC<CalendarPanelProps> = ({
       <div className="w-full">
         <Calendar
           value={selectedDate}
-          onChange={(value) => onDateSelect(value as Date)}
+          onChange={handleDateSelect}
           tileContent={tileContent}
           calendarType="gregory"
           className="w-full border-none font-inherit"

@@ -126,6 +126,8 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
                 name="birthDate"
                 value={formData.birthDate}
                 onChange={handleInputChange}
+                max={new Date().toISOString().split('T')[0]}
+                min="1900-01-01"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>

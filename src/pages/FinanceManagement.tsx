@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { FinanceRecord } from '../types';
+import { CsvManager } from '../utils/csvHandler';
 import { 
   calculateMonthlyStats, 
-  formatAmount
+  formatAmount,
+  loadAndValidateFinanceData
 } from '../utils/finance';
 import { sampleFinanceRecords } from '../data/sampleData';
+import { financeApi, transformFinance } from '../utils/supabase';
 import FinanceTable from '../components/FinanceTable';
 import FinanceSummary from '../components/FinanceSummary';
-
-const API_BASE_URL = 'http://localhost:3001/api';
 
 const FinanceManagement: React.FC = () => {
   const [financeRecords, setFinanceRecords] = useState<FinanceRecord[]>([]);
@@ -20,6 +21,12 @@ const FinanceManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [useSupabase, setUseSupabase] = useState(false);
+
+  // CSV 매니저 초기화
+  const financeCsvManager = new CsvManager<FinanceRecord>('finance', [
+    'id', 'date', 'type', 'title', 'amount', 'memo'
+  ]);
 
   // 데이터 로드
   useEffect(() => {
@@ -31,27 +38,62 @@ const FinanceManagement: React.FC = () => {
       setLoading(true);
       setError('');
       
-      const response = await fetch(`${API_BASE_URL}/finance`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      let data: FinanceRecord[] = [];
+
+      // Supabase 사용 가능 여부 확인
+      try {
+        const supabaseData = await financeApi.getAll();
+        if (supabaseData && supabaseData.length > 0) {
+          data = supabaseData.map(transformFinance);
+          setUseSupabase(true);
+          console.log('Supabase에서 데이터를 로드했습니다.');
+        } else {
+          throw new Error('Supabase에 데이터가 없습니다.');
+        }
+      } catch (supabaseError) {
+        console.log('Supabase 연결 실패, LocalStorage 사용:', supabaseError);
+        setUseSupabase(false);
+        
+        // LocalStorage에서 데이터 로드
+        data = await loadAndValidateFinanceData();
+        
+        // 데이터가 없으면 샘플 데이터로 초기화
+        if (data.length === 0) {
+          financeCsvManager.saveToStorage(sampleFinanceRecords);
+          data = sampleFinanceRecords;
+        }
       }
+
+      setFinanceRecords(data);
       
-      const data = await response.json();
-      
-      // 데이터가 없으면 샘플 데이터로 초기화
-      if (data.length === 0) {
-        await initializeSampleData();
-      } else {
-        setFinanceRecords(data);
-      }
     } catch (error) {
       console.error('데이터 로드 오류:', error);
-      setError('데이터를 불러오는 중 오류가 발생했습니다.');
       
-      // API 서버가 실행되지 않은 경우 LocalStorage에서 로드
-      const localData = localStorage.getItem('finance');
-      if (localData) {
-        setFinanceRecords(JSON.parse(localData));
+      // 구체적인 오류 메시지 제공
+      let errorMessage = '데이터를 불러오는 중 오류가 발생했습니다.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('fetch')) {
+          errorMessage = '서버 연결에 실패했습니다. 네트워크 연결을 확인해주세요.';
+        } else if (error.message.includes('Supabase')) {
+          errorMessage = '데이터베이스 연결에 실패했습니다. 설정을 확인해주세요.';
+        } else {
+          errorMessage = `데이터 로드 오류: ${error.message}`;
+        }
+      }
+      
+      setError(errorMessage);
+      
+      // 최후의 수단으로 LocalStorage에서 로드 시도
+      try {
+        const localData = localStorage.getItem('finance');
+        if (localData) {
+          const parsedData = JSON.parse(localData);
+          setFinanceRecords(parsedData);
+          setError(''); // 오류 메시지 제거
+        }
+      } catch (localError) {
+        console.error('LocalStorage 로드 오류:', localError);
       }
     } finally {
       setLoading(false);
@@ -68,9 +110,25 @@ const FinanceManagement: React.FC = () => {
       setLoading(true);
       setError('');
       
-      // 각 샘플 데이터를 API를 통해 추가
-      for (const record of sampleFinanceRecords) {
-        await addRecordToAPI(record);
+      if (useSupabase) {
+        // Supabase에서 기존 데이터 삭제 후 샘플 데이터 추가
+        const existingData = await financeApi.getAll();
+        for (const record of existingData) {
+          await financeApi.delete(record.id);
+        }
+        
+        for (const record of sampleFinanceRecords) {
+          await financeApi.create({
+            date: record.date,
+            type: record.type,
+            title: record.title,
+            amount: record.amount,
+            memo: record.memo
+          });
+        }
+      } else {
+        // LocalStorage에 샘플 데이터 저장
+        financeCsvManager.saveToStorage(sampleFinanceRecords);
       }
       
       setFinanceRecords(sampleFinanceRecords);
@@ -80,30 +138,6 @@ const FinanceManagement: React.FC = () => {
       setError('샘플 데이터 초기화 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  // API를 통해 레코드 추가
-  const addRecordToAPI = async (record: FinanceRecord): Promise<boolean> => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/finance`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(record),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log('API 응답:', result);
-      return result.success;
-    } catch (error) {
-      console.error('API 호출 오류:', error);
-      return false;
     }
   };
 
@@ -144,24 +178,28 @@ const FinanceManagement: React.FC = () => {
     try {
       setError('');
       
-      // API를 통해 추가
-      const success = await addRecordToAPI(newRecord);
-      
-      if (success) {
-        setFinanceRecords(prev => [...prev, newRecord]);
-        console.log('재무 기록이 성공적으로 추가되었습니다:', newRecord);
+      if (useSupabase) {
+        // Supabase에 추가
+        await financeApi.create({
+          date: newRecord.date,
+          type: newRecord.type,
+          title: newRecord.title,
+          amount: newRecord.amount,
+          memo: newRecord.memo
+        });
       } else {
-        throw new Error('API 호출 실패');
+        // LocalStorage에 추가
+        const success = financeCsvManager.appendToStorage(newRecord);
+        if (!success) {
+          throw new Error('LocalStorage 저장 실패');
+        }
       }
+      
+      setFinanceRecords(prev => [...prev, newRecord]);
+      console.log('재무 기록이 성공적으로 추가되었습니다:', newRecord);
     } catch (error) {
       console.error('재무 기록 추가 오류:', error);
       setError('재무 기록 추가에 실패했습니다.');
-      
-      // API 실패 시 LocalStorage에 백업 저장
-      const localData = JSON.parse(localStorage.getItem('finance') || '[]');
-      localData.push(newRecord);
-      localStorage.setItem('finance', JSON.stringify(localData));
-      setFinanceRecords(prev => [...prev, newRecord]);
     }
   };
 
@@ -170,38 +208,28 @@ const FinanceManagement: React.FC = () => {
     try {
       setError('');
       
-      const response = await fetch(`${API_BASE_URL}/finance/${record.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(record),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      
-      if (result.success) {
-        setFinanceRecords(prev => prev.map(r => r.id === record.id ? record : r));
-        console.log('재무 기록이 성공적으로 수정되었습니다:', record);
+      if (useSupabase) {
+        // Supabase에서 수정
+        await financeApi.update(record.id, {
+          date: record.date,
+          type: record.type,
+          title: record.title,
+          amount: record.amount,
+          memo: record.memo
+        });
       } else {
-        throw new Error('API 응답 실패');
+        // LocalStorage에서 수정
+        const success = financeCsvManager.updateByIdInStorage(record.id, record);
+        if (!success) {
+          throw new Error('LocalStorage 수정 실패');
+        }
       }
+      
+      setFinanceRecords(prev => prev.map(r => r.id === record.id ? record : r));
+      console.log('재무 기록이 성공적으로 수정되었습니다:', record);
     } catch (error) {
       console.error('재무 기록 수정 오류:', error);
       setError('재무 기록 수정에 실패했습니다.');
-      
-      // API 실패 시 LocalStorage에 백업 저장
-      const localData = JSON.parse(localStorage.getItem('finance') || '[]');
-      const index = localData.findIndex((r: FinanceRecord) => r.id === record.id);
-      if (index !== -1) {
-        localData[index] = record;
-        localStorage.setItem('finance', JSON.stringify(localData));
-        setFinanceRecords(prev => prev.map(r => r.id === record.id ? record : r));
-      }
     }
   };
 
@@ -214,31 +242,22 @@ const FinanceManagement: React.FC = () => {
     try {
       setError('');
       
-      const response = await fetch(`${API_BASE_URL}/finance/${recordId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      
-      if (result.success) {
-        setFinanceRecords(prev => prev.filter(r => r.id !== recordId));
-        console.log('재무 기록이 성공적으로 삭제되었습니다:', recordId);
+      if (useSupabase) {
+        // Supabase에서 삭제
+        await financeApi.delete(recordId);
       } else {
-        throw new Error('API 응답 실패');
+        // LocalStorage에서 삭제
+        const success = financeCsvManager.deleteByIdFromStorage(recordId);
+        if (!success) {
+          throw new Error('LocalStorage 삭제 실패');
+        }
       }
+      
+      setFinanceRecords(prev => prev.filter(r => r.id !== recordId));
+      console.log('재무 기록이 성공적으로 삭제되었습니다:', recordId);
     } catch (error) {
       console.error('재무 기록 삭제 오류:', error);
       setError('재무 기록 삭제에 실패했습니다.');
-      
-      // API 실패 시 LocalStorage에서 백업 삭제
-      const localData = JSON.parse(localStorage.getItem('finance') || '[]');
-      const filteredData = localData.filter((r: FinanceRecord) => r.id !== recordId);
-      localStorage.setItem('finance', JSON.stringify(filteredData));
-      setFinanceRecords(prev => prev.filter(r => r.id !== recordId));
     }
   };
 
@@ -248,7 +267,10 @@ const FinanceManagement: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg">데이터를 불러오는 중...</div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="text-lg">데이터를 불러오는 중...</div>
+        </div>
       </div>
     );
   }
@@ -259,18 +281,32 @@ const FinanceManagement: React.FC = () => {
       <div className="mb-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-900">재무 관리</h1>
-          <button
-            onClick={initializeSampleData}
-            className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm"
-          >
-            샘플 데이터 초기화
-          </button>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-600">
+              {useSupabase ? 'Supabase' : 'LocalStorage'} 사용 중
+            </span>
+            <button
+              onClick={initializeSampleData}
+              className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm"
+            >
+              샘플 데이터 초기화
+            </button>
+          </div>
         </div>
 
         {/* 에러 메시지 */}
         {error && (
           <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-            {error}
+            <div className="flex items-center">
+              <span className="text-red-600 mr-2">⚠️</span>
+              <span>{error}</span>
+              <button
+                onClick={() => setError('')}
+                className="ml-auto text-red-600 hover:text-red-800"
+              >
+                ×
+              </button>
+            </div>
           </div>
         )}
         

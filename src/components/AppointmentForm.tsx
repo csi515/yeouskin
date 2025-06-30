@@ -35,20 +35,22 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       setForm({
         customerId: appointment.customerId,
         productId: appointment.productId,
-        date: dt.toISOString().split('T')[0],
+        date: format(dt, 'yyyy-MM-dd'),
         time: dt.toTimeString().slice(0, 5),
         memo: appointment.memo || '',
       });
     } else {
-      setForm({
+      const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
+      setForm(prev => ({
+        ...prev,
+        date: selectedDateString,
         customerId: '',
         productId: '',
-        date: selectedDate.toISOString().split('T')[0],
         time: '10:00',
         memo: '',
-      });
+      }));
     }
-  }, [appointment, selectedDate]);
+  }, [appointment, selectedDate, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
