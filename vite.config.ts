@@ -19,16 +19,11 @@ export default defineConfig({
     port: 3001,
     host: true,
     cors: true,
-    allowedHosts: [
-      'localhost',
-      '127.0.0.1',
-      'yeouskin.onrender.com',
-      '.onrender.com'
-    ],
+    allowedHosts: true,
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks: {
