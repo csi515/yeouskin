@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "Customer Relationship Management System for Esthetic Shop",
   "main": "src/main.tsx",
-  "homepage": "https://crm-esthetic-shop.onrender.com",
+  "homepage": "https://yeouskin.onrender.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/csi515/2nd-job.git"
+    "url": "https://github.com/csi515/yeouskin.git"
   },
   "scripts": {
     "dev": "vite",
