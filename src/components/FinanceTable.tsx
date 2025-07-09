@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FinanceRecord } from '../types';
-import { formatAmount, parseAmount } from '../utils/finance';
+import { formatAmount, parseAmount, formatDateSafely } from '../utils/finance';
 
 interface FinanceTableProps {
   records: FinanceRecord[];
@@ -25,6 +25,11 @@ const FinanceTable: React.FC<FinanceTableProps> = ({
   useEffect(() => {
     const titles = [...new Set(records.filter(r => r?.title).map(r => r.title))];
     setSuggestions(titles);
+    
+    // Cleanup function to prevent memory leaks
+    return () => {
+      setSuggestions([]);
+    };
   }, [records]);
 
   // 편집 시작
@@ -183,7 +188,7 @@ const FinanceTable: React.FC<FinanceTableProps> = ({
                   // 보기 모드
                   <>
                     <td className="px-4 py-3 text-sm text-gray-900">
-                      {record?.date ? new Date(record.date).toLocaleDateString() : '날짜 없음'}
+                      {record?.date ? formatDateSafely(record.date) : '날짜 없음'}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${

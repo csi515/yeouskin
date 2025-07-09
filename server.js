@@ -82,8 +82,15 @@ app.post('/api/finance', (req, res) => {
       return res.status(400).json({ error: '필수 필드가 누락되었습니다.' });
     }
 
-    // CSV 라인 생성
-    const csvLine = `"${id}","${date}","${type}","${title}","${amount}","${memo || ''}"\n`;
+    // CSV 라인 생성 (안전한 방식)
+    const escapedId = escapeCsvField(id);
+    const escapedDate = escapeCsvField(date);
+    const escapedType = escapeCsvField(type);
+    const escapedTitle = escapeCsvField(title);
+    const escapedAmount = escapeCsvField(amount.toString());
+    const escapedMemo = escapeCsvField(memo || '');
+    
+    const csvLine = `"${escapedId}","${escapedDate}","${escapedType}","${escapedTitle}","${escapedAmount}","${escapedMemo}"\n`;
     
     // 파일에 추가
     fs.appendFileSync(financeCsvPath, csvLine, 'utf8');
@@ -122,8 +129,15 @@ app.put('/api/finance/:id', (req, res) => {
       const recordId = values[0];
       
       if (recordId === id) {
-        // 해당 레코드 업데이트
-        const updatedLine = `"${id}","${date}","${type}","${title}","${amount}","${memo || ''}"`;
+        // 해당 레코드 업데이트 (안전한 방식)
+        const escapedId = escapeCsvField(id);
+        const escapedDate = escapeCsvField(date);
+        const escapedType = escapeCsvField(type);
+        const escapedTitle = escapeCsvField(title);
+        const escapedAmount = escapeCsvField(amount.toString());
+        const escapedMemo = escapeCsvField(memo || '');
+        
+        const updatedLine = `"${escapedId}","${escapedDate}","${escapedType}","${escapedTitle}","${escapedAmount}","${escapedMemo}"`;
         updatedLines.push(updatedLine);
         updated = true;
       } else {
@@ -191,6 +205,22 @@ app.delete('/api/finance/:id', (req, res) => {
     res.status(500).json({ error: '데이터 삭제 중 오류가 발생했습니다.' });
   }
 });
+
+// CSV 필드 이스케이프 함수
+function escapeCsvField(field) {
+  if (field === null || field === undefined) {
+    return '';
+  }
+  
+  const stringField = String(field);
+  
+  // 따옴표가 있거나 쉼표, 개행문자가 있으면 따옴표로 감싸고 내부 따옴표는 이중화
+  if (stringField.includes('"') || stringField.includes(',') || stringField.includes('\n') || stringField.includes('\r')) {
+    return '"' + stringField.replace(/"/g, '""') + '"';
+  }
+  
+  return stringField;
+}
 
 // CSV 라인 파싱 함수
 function parseCsvLine(line) {

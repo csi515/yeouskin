@@ -7,7 +7,30 @@ export const formatAmount = (amount: number): string => {
 
 // 금액 문자열을 숫자로 파싱 (콤마 제거)
 export const parseAmount = (amountStr: string): number => {
-  return Number(amountStr.replace(/,/g, '')) || 0;
+  // 입력값 검증 및 정리
+  const cleanedStr = amountStr.replace(/[^\d,.-]/g, '').replace(/,/g, '');
+  const parsed = Number(cleanedStr);
+  
+  // 유효하지 않은 값이나 음수는 0으로 처리
+  if (isNaN(parsed) || parsed < 0) {
+    return 0;
+  }
+  
+  return parsed;
+};
+
+// 안전한 날짜 포맷팅 함수
+export const formatDateSafely = (dateStr: string): string => {
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
+      return '날짜 없음';
+    }
+    return date.toLocaleDateString();
+  } catch (error) {
+    console.warn('Invalid date format:', dateStr);
+    return '날짜 없음';
+  }
 };
 
 // 날짜가 특정 월에 속하는지 확인
