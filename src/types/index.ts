@@ -218,4 +218,40 @@ export interface Settings {
   appointmentSettings: AppointmentSettings;
   adminSettings: AdminSettings;
   themeSettings: ThemeSettings;
+}
+
+// Supabase MCP Types
+export interface SupabaseConnectionStatus {
+  success: boolean;
+  message: string;
+  timestamp?: string;
+}
+
+export interface SupabaseSchemaInfo {
+  tables: string[];
+  message: string;
+  version?: string;
+}
+
+export interface SupabaseTestData {
+  customers: number | string;
+  appointments: number | string;
+  products: number | string;
+  finance: number | string;
+  error?: string;
+}
+
+export interface SupabaseMCPConfig {
+  url: string;
+  anonKey: string;
+  serviceRoleKey?: string;
+  schema: string;
+  tables: string[];
+}
+
+export interface SupabaseQueryResult<T> {
+  success: boolean;
+  data?: T[];
+  error?: string;
+  count?: number;
 } 

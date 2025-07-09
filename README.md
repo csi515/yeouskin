@@ -30,11 +30,9 @@ src/
 ├── types/            # TypeScript 타입 정의
 │   └── index.ts
 ├── utils/            # 유틸리티 함수
-│   ├── csvHandler.ts
-│   ├── finance.ts
-│   └── supabase.ts
-├── data/             # 샘플 데이터
-│   └── sampleData.ts
+│   ├── supabaseClient.ts
+│   ├── supabaseMCP.ts
+│   └── migrateToSupabase.ts
 ├── App.tsx           # 메인 앱 컴포넌트
 ├── main.tsx          # 앱 진입점
 ├── App.css           # 앱 스타일
@@ -47,7 +45,7 @@ src/
 - **Styling**: Tailwind CSS
 - **Build Tool**: Vite
 - **Routing**: React Router DOM
-- **Data Management**: LocalStorage + Supabase (선택적)
+- **Data Management**: Supabase (PostgreSQL) + LocalStorage (백업)
 - **Date Handling**: date-fns
 - **Calendar**: react-calendar
 
@@ -95,19 +93,26 @@ npm run preview
 
 ## 📊 데이터 관리
 
-시스템은 LocalStorage를 사용하여 데이터를 로컬에 저장합니다:
+시스템은 Supabase를 기본 데이터베이스로 사용하며, LocalStorage를 백업으로 사용합니다:
 - 고객 정보 (customers)
 - 예약 정보 (appointments)
 - 상품 정보 (products)
 - 재무 데이터 (finance)
 
-### Supabase 연동 (선택사항)
+### Supabase 설정
 
 Supabase를 사용하려면 환경변수를 설정하세요:
 ```bash
 VITE_SUPABASE_URL=your-supabase-url
 VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
 ```
+
+### 데이터 마이그레이션
+
+기존 LocalStorage 데이터를 Supabase로 마이그레이션할 수 있습니다:
+1. 설정 페이지로 이동
+2. "데이터 마이그레이션" 섹션에서 마이그레이션 실행
+3. 마이그레이션 완료 후 로컬 데이터 정리
 
 ## 🎨 UI/UX
 

@@ -76,24 +76,24 @@ const ErrorFallback: React.FC = () => (
 function App() {
   return (
     <ErrorBoundary fallback={<ErrorFallback />}>
-      <Router>
-        <RoutingHandler />
-        <Layout>
+    <Router>
+      <RoutingHandler />
+      <Layout>
           <ErrorBoundary fallback={<ErrorFallback />}>
             <Suspense fallback={<LoadingFallback />}>
-              <Routes>
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/customers" element={<CustomerManagement />} />
-                <Route path="/products" element={<ProductManagement />} />
-                <Route path="/appointments" element={<AppointmentManagement />} />
-                <Route path="/finance" element={<FinanceManagement />} />
-                <Route path="/settings" element={<Settings />} />
-              </Routes>
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/customers" element={<CustomerManagement />} />
+          <Route path="/products" element={<ProductManagement />} />
+          <Route path="/appointments" element={<AppointmentManagement />} />
+          <Route path="/finance" element={<FinanceManagement />} />
+          <Route path="/settings" element={<Settings />} />
+        </Routes>
             </Suspense>
           </ErrorBoundary>
-        </Layout>
-      </Router>
+      </Layout>
+    </Router>
     </ErrorBoundary>
   );
 }

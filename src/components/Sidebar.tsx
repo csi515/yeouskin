@@ -42,8 +42,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
                 className={({ isActive }) =>
                   `flex items-center p-3 rounded-lg transition-colors ${
                     isActive
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-700 hover:bg-gray-100'
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-700 hover:bg-gray-100'
                   }`
                 }
                 title={collapsed ? item.label : undefined}

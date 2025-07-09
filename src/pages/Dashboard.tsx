@@ -1,160 +1,92 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import supabase from '../utils/supabaseClient';
 import { Customer, Appointment, Product, FinanceRecord } from '../types';
-import { CsvManager } from '../utils/csvHandler';
-import { 
-  calculateCurrentMonthStats, 
-  getRecentFinanceRecords, 
-  formatAmount,
-  loadAndValidateFinanceData 
-} from '../utils/finance';
-import { sampleCustomers, sampleAppointments, sampleProducts, sampleFinanceRecords } from '../data/sampleData';
 
 const Dashboard: React.FC = () => {
-  const navigate = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [financeRecords, setFinanceRecords] = useState<FinanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // CSV 매니저 초기화
-  const customerCsvManager = new CsvManager<Customer>('customers', [
-    'id', 'name', 'phone', 'birthDate', 'skinType', 'memo', 'point', 'createdAt', 'updatedAt'
-  ]);
-
-  const appointmentCsvManager = new CsvManager<Appointment>('appointments', [
-    'id', 'customerId', 'productId', 'datetime', 'memo'
-  ]);
-
-  const productCsvManager = new CsvManager<Product>('products', [
-    'id', 'name', 'price', 'type', 'count', 'status', 'description'
-  ]);
-
-  const financeCsvManager = new CsvManager<FinanceRecord>('finance', [
-    'id', 'date', 'type', 'title', 'amount', 'memo'
-  ]);
-
-  // 데이터 로드
   useEffect(() => {
-    loadData();
+    loadDashboardData();
   }, []);
 
-  // 데이터 변경 이벤트 리스너
-  useEffect(() => {
-    const handleDataChanged = () => {
-      loadData();
-    };
-
-    window.addEventListener('dataChanged', handleDataChanged);
-    return () => {
-      window.removeEventListener('dataChanged', handleDataChanged);
-    };
-  }, []);
-
-  const loadData = async () => {
+  const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const [customersData, appointmentsData, productsData] = await Promise.all([
-        customerCsvManager.readFromStorage(),
-        appointmentCsvManager.readFromStorage(),
-        productCsvManager.readFromStorage(),
+      
+      // 모든 데이터를 병렬로 로드
+      const [customersResult, appointmentsResult, productsResult, financeResult] = await Promise.all([
+        supabase.from('customers').select('*'),
+        supabase.from('appointments').select('*'),
+        supabase.from('products').select('*'),
+        supabase.from('finance').select('*')
       ]);
 
-      // 재무 데이터는 새로운 유틸리티 함수를 사용하여 로드 및 검증
-      let financeData = await loadAndValidateFinanceData();
+      if (customersResult.error) throw customersResult.error;
+      if (appointmentsResult.error) throw appointmentsResult.error;
+      if (productsResult.error) throw productsResult.error;
+      if (financeResult.error) throw financeResult.error;
 
-      // 데이터가 없으면 샘플 데이터로 초기화
-      if (customersData.length === 0) {
-        customerCsvManager.saveToStorage(sampleCustomers);
-        setCustomers(sampleCustomers);
-      } else {
-        setCustomers(customersData);
-      }
-
-      if (appointmentsData.length === 0) {
-        appointmentCsvManager.saveToStorage(sampleAppointments);
-        setAppointments(sampleAppointments);
-      } else {
-        setAppointments(appointmentsData);
-      }
-
-      if (productsData.length === 0) {
-        productCsvManager.saveToStorage(sampleProducts);
-        setProducts(sampleProducts);
-      } else {
-        setProducts(productsData);
-      }
-
-      if (financeData.length === 0) {
-        financeCsvManager.saveToStorage(sampleFinanceRecords);
-        financeData = sampleFinanceRecords;
-      }
-      
-      setFinanceRecords(financeData);
+      setCustomers(customersResult.data || []);
+      setAppointments(appointmentsResult.data || []);
+      setProducts(productsResult.data || []);
+      setFinanceRecords(financeResult.data || []);
     } catch (error) {
-      console.error('데이터 로드 오류:', error);
+      setError(error instanceof Error ? error.message : '대시보드 데이터 로드 실패');
+      console.error('대시보드 데이터 로드 오류:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // 오늘 예약 수 계산
-  const getTodayAppointments = () => {
-    const today = new Date();
-    const todayString = today.toISOString().split('T')[0];
-    return appointments.filter(appointment => 
-      appointment?.datetime?.startsWith(todayString)
-    ).length;
-  };
+  // 오늘 날짜 계산
+  const today = new Date();
+  const todayString = today.toISOString().split('T')[0];
 
-  // 이번 달 재무 통계 계산
-  const currentMonthStats = calculateCurrentMonthStats(financeRecords);
+  // 오늘 예약 수
+  const todayAppointments = appointments.filter(appointment => {
+    if (!appointment.datetime) return false;
+    const appointmentDate = new Date(appointment.datetime);
+    return appointmentDate.toISOString().split('T')[0] === todayString;
+  });
 
-  // 최근 재무 기록 가져오기
-  const recentFinanceRecords = getRecentFinanceRecords(financeRecords, 5);
+  // 이번 달 수입
+  const currentMonth = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+  const monthlyIncome = financeRecords
+    .filter(record => record.type === 'income' && record.date.startsWith(currentMonth))
+    .reduce((sum, record) => sum + record.amount, 0);
 
-  // 활성 서비스 수 계산
-  const getActiveServices = () => {
-    return products.filter(product => product.status === 'active').length;
-  };
+  // 이번 달 지출
+  const monthlyExpense = financeRecords
+    .filter(record => record.type === 'expense' && record.date.startsWith(currentMonth))
+    .reduce((sum, record) => sum + record.amount, 0);
 
-  // 빠른 작업 버튼들
-  const quickActions = [
-    {
-      title: '고객 관리',
-      description: '고객 정보 관리',
-      icon: '👥',
-      color: 'bg-blue-500',
-      route: '/customers'
-    },
-    {
-      title: '상품 관리',
-      description: '상품 및 서비스 관리',
-      icon: '🛍️',
-      color: 'bg-green-500',
-      route: '/products'
-    },
-    {
-      title: '예약 관리',
-      description: '예약 일정 관리',
-      icon: '📅',
-      color: 'bg-purple-500',
-      route: '/appointments'
-    },
-    {
-      title: '재무 관리',
-      description: '수입/지출 관리',
-      icon: '💰',
-      color: 'bg-yellow-500',
-      route: '/finance'
-    }
-  ];
+  // 활성 상품 수
+  const activeProducts = products.filter(product => product.status === 'active').length;
+
+  // 총 포인트
+  const totalPoints = customers.reduce((sum, customer) => sum + (customer.point || 0), 0);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg">데이터를 불러오는 중...</div>
+      <div className="p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg text-gray-600">데이터를 불러오는 중...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <strong>오류:</strong> {error}
+        </div>
       </div>
     );
   }
@@ -163,194 +95,125 @@ const Dashboard: React.FC = () => {
     <div className="p-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">대시보드</h1>
-        <p className="text-gray-600">에스테틱샵 CRM 시스템에 오신 것을 환영합니다</p>
+        <p className="text-gray-600">시스템 현황을 한눈에 확인하세요.</p>
       </div>
 
-      {/* 주요 통계 */}
+      {/* 통계 카드 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow border">
+        <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center">
             <div className="p-3 rounded-full bg-blue-100 text-blue-600">
-              <span className="text-2xl">👥</span>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">총 고객 수</p>
-              <p className="text-2xl font-bold text-gray-900">{customers.length}명</p>
+              <p className="text-2xl font-semibold text-gray-900">{customers.length}명</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow border">
+        <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center">
             <div className="p-3 rounded-full bg-green-100 text-green-600">
-              <span className="text-2xl">📅</span>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">오늘 예약</p>
-              <p className="text-2xl font-bold text-gray-900">{getTodayAppointments()}건</p>
+              <p className="text-2xl font-semibold text-gray-900">{todayAppointments.length}건</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow border">
-          <div className="flex items-center">
-            <div className="p-3 rounded-full bg-yellow-100 text-yellow-600">
-              <span className="text-2xl">💰</span>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">이번 달 매출</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {formatAmount(currentMonthStats.totalIncome)}원
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow border">
+        <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center">
             <div className="p-3 rounded-full bg-purple-100 text-purple-600">
-              <span className="text-2xl">🛍️</span>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">활성 서비스</p>
-              <p className="text-2xl font-bold text-gray-900">{getActiveServices()}개</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 이번 달 재무 요약 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow border border-green-200">
-          <div className="flex items-center">
-            <div className="p-3 rounded-full bg-green-100 text-green-600">
-              <span className="text-2xl">📈</span>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+              </svg>
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">이번 달 수입</p>
-              <p className="text-2xl font-bold text-green-600">
-                {formatAmount(currentMonthStats.totalIncome)}원
-              </p>
+              <p className="text-2xl font-semibold text-gray-900">{monthlyIncome.toLocaleString()}원</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow border border-red-200">
+        <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center">
-            <div className="p-3 rounded-full bg-red-100 text-red-600">
-              <span className="text-2xl">📉</span>
+            <div className="p-3 rounded-full bg-orange-100 text-orange-600">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">이번 달 지출</p>
-              <p className="text-2xl font-bold text-red-600">
-                {formatAmount(currentMonthStats.totalExpense)}원
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow border border-blue-200">
-          <div className="flex items-center">
-            <div className="p-3 rounded-full bg-blue-100 text-blue-600">
-              <span className="text-2xl">💵</span>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">이번 달 순이익</p>
-              <p className={`text-2xl font-bold ${
-                currentMonthStats.netProfit >= 0 ? 'text-green-600' : 'text-red-600'
-              }`}>
-                {formatAmount(currentMonthStats.netProfit)}원
-              </p>
+              <p className="text-sm font-medium text-gray-600">활성 상품</p>
+              <p className="text-2xl font-semibold text-gray-900">{activeProducts}개</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 빠른 작업 */}
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">빠른 작업</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {quickActions.map((action, index) => (
-            <button
-              key={index}
-              onClick={() => navigate(action.route)}
-              className={`${action.color} text-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow duration-200 text-left`}
-            >
-              <div className="text-3xl mb-2">{action.icon}</div>
-              <h3 className="font-semibold text-lg mb-1">{action.title}</h3>
-              <p className="text-sm opacity-90">{action.description}</p>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* 최근 활동 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 최근 예약 */}
-        <div className="bg-white p-6 rounded-lg shadow border">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">최근 예약</h3>
+      {/* 추가 통계 */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">재무 현황</h3>
           <div className="space-y-3">
-            {appointments
-              .filter(appointment => appointment?.id && appointment?.datetime)
-              .sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime())
-              .slice(0, 5)
-              .map(appointment => {
-                const customer = customers.find(c => c?.id === appointment?.customerId);
-                const product = products.find(p => p?.id === appointment?.productId);
-                return (
-                  <div key={appointment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                    <div>
-                      <p className="font-medium text-gray-900">{customer?.name || '알 수 없음'}</p>
-                      <p className="text-sm text-gray-600">{product?.name || '알 수 없음'}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-600">
-                        {appointment?.datetime ? new Date(appointment.datetime).toLocaleDateString() : '날짜 없음'}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {appointment?.datetime ? new Date(appointment.datetime).toLocaleTimeString() : '시간 없음'}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="flex justify-between">
+              <span className="text-gray-600">이번 달 수입</span>
+              <span className="font-semibold text-green-600">{monthlyIncome.toLocaleString()}원</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">이번 달 지출</span>
+              <span className="font-semibold text-red-600">{monthlyExpense.toLocaleString()}원</span>
+            </div>
+            <div className="flex justify-between border-t pt-2">
+              <span className="text-gray-600">순이익</span>
+              <span className={`font-semibold ${monthlyIncome - monthlyExpense >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {(monthlyIncome - monthlyExpense).toLocaleString()}원
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* 최근 재무 기록 */}
-        <div className="bg-white p-6 rounded-lg shadow border">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">최근 재무 기록</h3>
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">고객 현황</h3>
           <div className="space-y-3">
-            {recentFinanceRecords.length > 0 ? (
-              recentFinanceRecords.map(record => (
-                <div key={record.id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                  <div className="flex items-center">
-                    <div className={`w-3 h-3 rounded-full mr-3 ${
-                      record.type === 'income' ? 'bg-green-500' : 'bg-red-500'
-                    }`}></div>
-                    <div>
-                      <p className="font-medium text-gray-900">{record.title}</p>
-                      <p className="text-sm text-gray-600">{record.memo || '메모 없음'}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className={`font-medium ${
-                      record.type === 'income' ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {record.type === 'income' ? '+' : '-'}{formatAmount(record.amount)}원
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {new Date(record.date).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <div className="text-4xl mb-2">💰</div>
-                <p>재무 기록이 없습니다.</p>
-              </div>
-            )}
+            <div className="flex justify-between">
+              <span className="text-gray-600">총 고객 수</span>
+              <span className="font-semibold">{customers.length}명</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">총 포인트</span>
+              <span className="font-semibold">{totalPoints.toLocaleString()}P</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">평균 포인트</span>
+              <span className="font-semibold">
+                {customers.length > 0 ? Math.round(totalPoints / customers.length) : 0}P
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">예약 현황</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-gray-600">총 예약 수</span>
+              <span className="font-semibold">{appointments.length}건</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">오늘 예약</span>
+              <span className="font-semibold">{todayAppointments.length}건</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">활성 상품</span>
+              <span className="font-semibold">{activeProducts}개</span>
+            </div>
           </div>
         </div>
       </div>

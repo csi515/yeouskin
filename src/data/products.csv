@@ -1,7 +1,0 @@
-id,name,price,type,count,status,description
-1,여드름 관리 10회권,500000,voucher,10,active,진정/재생 집중 케어
-2,리프팅 관리 5회권,400000,voucher,5,active,고주파 리프팅 집중 케어
-3,수분관리 1회,60000,single,,active,수분 앰플 + 마스크 포함
-4,화이트닝 관리 8회권,350000,voucher,8,active,미백 집중 케어 + 선케어
-5,모공 관리 1회,45000,single,,inactive,클레이 마스크 + 토너 포함
-6,안티에이징 12회권,600000,voucher,12,active,탄력 + 주름 개선 집중 케어 

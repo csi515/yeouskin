@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import SupabaseMCPTest from '../components/SupabaseMCPTest';
+import DataMigration from '../components/DataMigration';
+import SampleDataGeneratorComponent from '../components/SampleDataGenerator';
 
 interface Settings {
   businessName: string;
@@ -280,6 +283,24 @@ const Settings: React.FC = () => {
               <option value="en">English</option>
             </select>
           </div>
+        </div>
+
+        {/* Supabase MCP 연결 테스트 */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Supabase MCP 연결 테스트</h2>
+          <SupabaseMCPTest />
+        </div>
+
+        {/* 데이터 마이그레이션 */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">데이터 마이그레이션</h2>
+          <DataMigration />
+        </div>
+
+        {/* 샘플 데이터 생성 */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">샘플 데이터 생성</h2>
+          <SampleDataGeneratorComponent />
         </div>
 
         {/* 저장 버튼 */}
