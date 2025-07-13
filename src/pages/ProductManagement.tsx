@@ -136,6 +136,7 @@ const ProductManagement: React.FC = () => {
 
       {isFormOpen && (
         <ProductForm
+          isOpen={isFormOpen}
           product={editingProduct || undefined}
           onSubmit={editingProduct ? 
             (productData) => handleUpdateProduct(editingProduct.id, productData) : 

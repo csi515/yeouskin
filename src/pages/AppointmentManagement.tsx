@@ -174,6 +174,7 @@ const AppointmentManagement: React.FC = () => {
 
       {isFormOpen && (
         <AppointmentForm
+          isOpen={isFormOpen}
           appointment={editingAppointment || undefined}
           customers={customers}
           products={products}

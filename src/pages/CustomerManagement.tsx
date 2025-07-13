@@ -172,8 +172,10 @@ const CustomerManagement: React.FC = () => {
       {isEditModalOpen && selectedCustomer && (
         <EditCustomerModal
           customer={selectedCustomer}
+          products={[]} // 실제로는 상품 데이터를 가져와야 함
+          purchases={[]} // 실제로는 구매 데이터를 가져와야 함
           appointments={[]} // 실제로는 고객의 예약 데이터를 가져와야 함
-          purchaseItems={[]} // 실제로는 고객의 구매 아이템을 가져와야 함
+          isOpen={isEditModalOpen}
           onSubmit={(customer, appointments, purchaseItems) => {
             handleUpdateCustomer(customer.id, customer);
           }}

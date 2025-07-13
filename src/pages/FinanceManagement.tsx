@@ -130,13 +130,14 @@ const FinanceManagement: React.FC = () => {
 
       <FinanceSummary 
         records={financeRecords} 
-        selectedMonth={new Date().getMonth()}
+        selectedMonth={new Date().toISOString().substring(0, 7)}
       />
 
       <FinanceTable
         records={financeRecords}
-        onEdit={handleEditClick}
+        onSave={handleAddRecord}
         onDelete={handleDeleteRecord}
+        onUpdate={handleUpdateRecord}
       />
 
       {isFormOpen && (
