@@ -26,7 +26,8 @@ src/
 │   ├── AppointmentManagement.tsx
 │   ├── FinanceManagement.tsx
 │   ├── ProductManagement.tsx
-│   └── Settings.tsx
+│   ├── Settings.tsx
+│   └── NotFound.tsx  # 404 페이지
 ├── types/            # TypeScript 타입 정의
 │   └── index.ts
 ├── utils/            # 유틸리티 함수
@@ -78,12 +79,15 @@ npm run preview
 ## 🔧 개발
 
 ### 스크립트
-- `npm run dev`: 개발 서버 실행 (포트 3001)
+- `npm run dev`: 개발 서버 실행 (포트 3000)
 - `npm run build`: 프로덕션 빌드
+- `npm run build:prod`: 프로덕션 모드로 빌드
+- `npm run build:clean`: 빌드 전 정리 후 빌드
 - `npm run preview`: 빌드된 앱 미리보기
 - `npm run lint`: ESLint 검사
 - `npm run type-check`: TypeScript 타입 검사
 - `npm run server`: 백엔드 서버 실행
+- `npm run clean`: dist 폴더 정리
 
 ### 코드 구조
 - **컴포넌트**: 재사용 가능한 UI 컴포넌트
@@ -130,19 +134,43 @@ VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
 
 ## 🚀 배포
 
-### Render 배포
+### Render Static Site 배포 (권장)
 
-1. GitHub 리포지토리를 Render에 연결
-2. Build Command: `npm run build`
-3. Publish Directory: `dist`
-4. Environment Variables 설정 (필요시)
+이 프로젝트는 Render의 Static Site 서비스에 최적화되어 있습니다:
 
-### Vercel 배포
+1. **GitHub 리포지토리를 Render에 연결**
+2. **서비스 타입**: Static Site 선택
+3. **빌드 설정**:
+   - Build Command: `npm run build:clean`
+   - Publish Directory: `dist`
+4. **환경변수 설정** (Render 대시보드에서):
+   ```
+   VITE_SUPABASE_URL=your-supabase-url
+   VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+   ```
 
+### 배포 최적화 사항
+
+- **SPA 라우팅**: 모든 경로가 `index.html`로 리다이렉트
+- **캐싱 전략**: 
+  - 정적 자산: 1년 캐시
+  - HTML 파일: 캐시 없음
+- **보안 헤더**: XSS, Clickjacking 방지
+- **404 페이지**: 존재하지 않는 경로 처리
+
+### 다른 플랫폼 배포
+
+#### Vercel 배포
 1. Vercel에 GitHub 리포지토리 연결
 2. Framework Preset: Vite
 3. Build Command: `npm run build`
 4. Output Directory: `dist`
+
+#### Netlify 배포
+1. Netlify에 GitHub 리포지토리 연결
+2. Build Command: `npm run build`
+3. Publish Directory: `dist`
+4. _redirects 파일 추가 (SPA 라우팅용)
 
 ## 📝 라이선스
 
@@ -161,6 +189,12 @@ MIT License
 문제가 발생하거나 질문이 있으시면 이슈를 생성해주세요.
 
 ## 🔄 업데이트 로그
+
+### v1.1.0
+- Static Site 배포 최적화
+- 404 페이지 추가
+- 빌드 최적화 및 캐싱 전략 개선
+- 보안 헤더 추가
 
 ### v1.0.0
 - 초기 CRM 시스템 구현
