@@ -128,12 +128,15 @@ const FinanceManagement: React.FC = () => {
         </button>
       </div>
 
-      <FinanceSummary records={financeRecords} />
+      <FinanceSummary 
+        records={financeRecords} 
+        selectedMonth={new Date().getMonth()}
+      />
 
       <FinanceTable
         records={financeRecords}
-        onEditClick={handleEditClick}
-        onDeleteClick={handleDeleteRecord}
+        onEdit={handleEditClick}
+        onDelete={handleDeleteRecord}
       />
 
       {isFormOpen && (

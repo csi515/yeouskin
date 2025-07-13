@@ -130,14 +130,17 @@ const ProductManagement: React.FC = () => {
 
       <ProductTable
         products={products}
-        onEditClick={handleEditClick}
-        onDeleteClick={handleDeleteProduct}
+        onEdit={handleEditClick}
+        onDelete={handleDeleteProduct}
       />
 
       {isFormOpen && (
         <ProductForm
-          product={editingProduct}
-          onSubmit={editingProduct ? handleUpdateProduct : handleAddProduct}
+          product={editingProduct || undefined}
+          onSubmit={editingProduct ? 
+            (productData) => handleUpdateProduct(editingProduct.id, productData) : 
+            handleAddProduct
+          }
           onClose={() => {
             setIsFormOpen(false);
             setEditingProduct(null);
