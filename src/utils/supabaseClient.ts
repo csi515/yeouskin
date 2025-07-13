@@ -23,13 +23,27 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Mock Supabase 클라이언트 (환경변수가 없을 때 사용)
 const createMockSupabase = () => {
   console.log('Mock Supabase 클라이언트를 생성합니다.');
+  
+  const mockResponse = { data: [], error: null };
+  const mockCountResponse = { data: [{ count: 0 }], error: null, count: 0 };
+  
+  const createMockQueryBuilder = () => {
+    const mockBuilder = {
+      select: () => mockBuilder,
+      insert: () => mockBuilder,
+      update: () => mockBuilder,
+      delete: () => mockBuilder,
+      eq: () => mockBuilder,
+      order: () => mockBuilder,
+      count: () => Promise.resolve(mockCountResponse),
+      then: (resolve: any) => resolve(mockResponse),
+      catch: (reject: any) => mockBuilder,
+    };
+    return mockBuilder;
+  };
+  
   return {
-    from: (table: string) => ({
-      select: () => Promise.resolve({ data: [], error: null }),
-      insert: () => Promise.resolve({ data: [], error: null }),
-      update: () => Promise.resolve({ data: [], error: null }),
-      delete: () => Promise.resolve({ data: [], error: null }),
-    }),
+    from: (table: string) => createMockQueryBuilder(),
     auth: {
       getSession: () => Promise.resolve({ data: { session: null }, error: null }),
     }
