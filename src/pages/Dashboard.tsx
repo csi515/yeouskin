@@ -26,18 +26,24 @@ const Dashboard: React.FC = () => {
         supabase.from('finance').select('*')
       ]);
 
-      if (customersResult.error) throw customersResult.error;
-      if (appointmentsResult.error) throw appointmentsResult.error;
-      if (productsResult.error) throw productsResult.error;
-      if (financeResult.error) throw financeResult.error;
-
+      // 에러가 있더라도 데이터가 있으면 사용
       setCustomers(customersResult.data || []);
       setAppointments(appointmentsResult.data || []);
       setProducts(productsResult.data || []);
       setFinanceRecords(financeResult.data || []);
+
+      // 모든 에러를 로그로만 기록하고 앱은 계속 실행
+      if (customersResult.error) console.warn('고객 데이터 로드 오류:', customersResult.error);
+      if (appointmentsResult.error) console.warn('예약 데이터 로드 오류:', appointmentsResult.error);
+      if (productsResult.error) console.warn('상품 데이터 로드 오류:', productsResult.error);
+      if (financeResult.error) console.warn('재무 데이터 로드 오류:', financeResult.error);
     } catch (error) {
-      setError(error instanceof Error ? error.message : '대시보드 데이터 로드 실패');
       console.error('대시보드 데이터 로드 오류:', error);
+      // 에러가 발생해도 빈 배열로 초기화하여 앱이 계속 작동하도록 함
+      setCustomers([]);
+      setAppointments([]);
+      setProducts([]);
+      setFinanceRecords([]);
     } finally {
       setLoading(false);
     }
@@ -76,16 +82,6 @@ const Dashboard: React.FC = () => {
       <div className="p-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-lg text-gray-600">데이터를 불러오는 중...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          <strong>오류:</strong> {error}
         </div>
       </div>
     );

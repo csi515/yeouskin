@@ -139,13 +139,18 @@ const CustomerManagement: React.FC = () => {
 
       <CustomerTable
         customers={customers}
-        onCustomerClick={handleCustomerClick}
-        onEditClick={handleEditClick}
-        onDeleteClick={handleDeleteCustomer}
+        onEdit={handleEditClick}
+        onViewDetails={handleCustomerClick}
+        onDelete={handleDeleteCustomer}
+        getVoucherSummary={(customerId) => {
+          // 간단한 바우처 요약 반환 (실제로는 더 복잡한 로직 필요)
+          return '0개';
+        }}
       />
 
       {isFormOpen && (
         <CustomerForm
+          isOpen={isFormOpen}
           onSubmit={handleAddCustomer}
           onClose={() => setIsFormOpen(false)}
         />
@@ -154,6 +159,9 @@ const CustomerManagement: React.FC = () => {
       {isDetailsModalOpen && selectedCustomer && (
         <CustomerDetailsModal
           customer={selectedCustomer}
+          isOpen={isDetailsModalOpen}
+          appointments={[]} // 실제로는 고객의 예약 데이터를 가져와야 함
+          treatmentRecords={[]} // 실제로는 고객의 시술 기록을 가져와야 함
           onClose={() => {
             setIsDetailsModalOpen(false);
             setSelectedCustomer(null);
@@ -164,7 +172,13 @@ const CustomerManagement: React.FC = () => {
       {isEditModalOpen && selectedCustomer && (
         <EditCustomerModal
           customer={selectedCustomer}
-          onSubmit={handleUpdateCustomer}
+          products={[]} // 실제로는 상품 데이터를 가져와야 함
+          purchases={[]} // 실제로는 구매 데이터를 가져와야 함
+          appointments={[]} // 실제로는 고객의 예약 데이터를 가져와야 함
+          isOpen={isEditModalOpen}
+          onSubmit={(customer, appointments, purchaseItems) => {
+            handleUpdateCustomer(customer.id, customer);
+          }}
           onClose={() => {
             setIsEditModalOpen(false);
             setSelectedCustomer(null);

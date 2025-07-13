@@ -8,6 +8,7 @@ import ProductManagement from './pages/ProductManagement';
 import AppointmentManagement from './pages/AppointmentManagement';
 import FinanceManagement from './pages/FinanceManagement';
 import Settings from './pages/Settings';
+import NotFound from './pages/NotFound';
 import './App.css';
 
 // 라우팅 핸들러 컴포넌트
@@ -76,24 +77,25 @@ const ErrorFallback: React.FC = () => (
 function App() {
   return (
     <ErrorBoundary fallback={<ErrorFallback />}>
-    <Router>
-      <RoutingHandler />
-      <Layout>
+      <Router>
+        <RoutingHandler />
+        <Layout>
           <ErrorBoundary fallback={<ErrorFallback />}>
             <Suspense fallback={<LoadingFallback />}>
-        <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/customers" element={<CustomerManagement />} />
-          <Route path="/products" element={<ProductManagement />} />
-          <Route path="/appointments" element={<AppointmentManagement />} />
-          <Route path="/finance" element={<FinanceManagement />} />
-          <Route path="/settings" element={<Settings />} />
-        </Routes>
+              <Routes>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/customers" element={<CustomerManagement />} />
+                <Route path="/products" element={<ProductManagement />} />
+                <Route path="/appointments" element={<AppointmentManagement />} />
+                <Route path="/finance" element={<FinanceManagement />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
             </Suspense>
           </ErrorBoundary>
-      </Layout>
-    </Router>
+        </Layout>
+      </Router>
     </ErrorBoundary>
   );
 }

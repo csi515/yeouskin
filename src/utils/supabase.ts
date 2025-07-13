@@ -1,21 +1,23 @@
-// Vite 환경변수 타입 선언 (최상단에 추가)
-declare global {
-  interface ImportMeta {
-    env: {
-      VITE_SUPABASE_URL: string;
-      VITE_SUPABASE_ANON_KEY: string;
-      [key: string]: any;
-    };
-  }
-}
-
 import { createClient } from '@supabase/supabase-js';
 
 // Supabase 설정 (Vite 환경변수 방식)
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://wysihrzbnxhfnymtnvzj.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// 환경변수 검증
+if (!supabaseAnonKey) {
+  console.error('VITE_SUPABASE_ANON_KEY 환경변수가 설정되지 않았습니다.');
+  throw new Error('Supabase anon key가 누락되었습니다. VITE_SUPABASE_ANON_KEY 환경변수를 확인하세요.');
+}
+
+// Supabase 클라이언트 생성 시 옵션 추가
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  }
+});
 
 // 타입 정의
 export interface SupabaseCustomer {

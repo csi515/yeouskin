@@ -148,6 +148,8 @@ const AppointmentManagement: React.FC = () => {
         <div className="lg:col-span-1">
           <CalendarPanel
             appointments={appointments}
+            customers={customers}
+            products={products}
             selectedDate={selectedDate}
             onDateSelect={handleDateSelect}
           />
@@ -156,20 +158,31 @@ const AppointmentManagement: React.FC = () => {
         <div className="lg:col-span-2">
           <ReservationListPanel
             appointments={appointments}
+            customers={customers}
+            products={products}
             selectedDate={selectedDate}
-            onEditClick={handleEditClick}
-            onDeleteClick={handleDeleteAppointment}
+            onAddReservation={() => setIsFormOpen(true)}
+            onEditReservation={handleEditClick}
+            onDeleteReservation={handleDeleteAppointment}
+            onViewDetail={(appointment) => {
+              setEditingAppointment(appointment);
+              setIsFormOpen(true);
+            }}
           />
         </div>
       </div>
 
       {isFormOpen && (
         <AppointmentForm
-          appointment={editingAppointment}
+          isOpen={isFormOpen}
+          appointment={editingAppointment || undefined}
           customers={customers}
           products={products}
           selectedDate={selectedDate}
-          onSubmit={editingAppointment ? handleUpdateAppointment : handleAddAppointment}
+          onSubmit={editingAppointment ? 
+            (appointmentData) => handleUpdateAppointment(editingAppointment.id, appointmentData) : 
+            handleAddAppointment
+          }
           onClose={() => {
             setIsFormOpen(false);
             setEditingAppointment(null);
