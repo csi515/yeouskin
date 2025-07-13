@@ -137,7 +137,7 @@ const FinanceManagement: React.FC = () => {
         records={financeRecords}
         onSave={handleAddRecord}
         onDelete={handleDeleteRecord}
-        onUpdate={handleUpdateRecord}
+        onUpdate={(record) => handleUpdateRecord(record.id, record)}
       />
 
       {isFormOpen && (
