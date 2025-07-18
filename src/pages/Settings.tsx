@@ -1,7 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import SupabaseMCPTest from '../components/SupabaseMCPTest';
-import DataMigration from '../components/DataMigration';
-import SampleDataGeneratorComponent from '../components/SampleDataGenerator';
 
 interface Settings {
   businessName: string;
@@ -9,8 +6,6 @@ interface Settings {
   businessAddress: string;
   businessHours: string;
   defaultAppointmentDuration: number;
-  autoBackup: boolean;
-  backupInterval: number;
   language: string;
 }
 
@@ -21,8 +16,6 @@ const Settings: React.FC = () => {
     businessAddress: '',
     businessHours: '',
     defaultAppointmentDuration: 60,
-    autoBackup: true,
-    backupInterval: 7,
     language: 'ko'
   });
 
@@ -67,59 +60,6 @@ const Settings: React.FC = () => {
 
   const handleInputChange = (key: keyof Settings, value: string | number | boolean) => {
     setSettings(prev => ({ ...prev, [key]: value }));
-  };
-
-  const exportData = () => {
-    try {
-      const data = {
-        customers: localStorage.getItem('crm-customers'),
-        appointments: localStorage.getItem('crm-appointments'),
-        products: localStorage.getItem('crm-products'),
-        finance: localStorage.getItem('crm-finance'),
-        settings: localStorage.getItem('crm-settings')
-      };
-
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `crm-backup-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      setMessage('데이터가 성공적으로 내보내졌습니다.');
-      setTimeout(() => setMessage(''), 3000);
-    } catch (error) {
-      setMessage('데이터 내보내기에 실패했습니다.');
-      console.error('데이터 내보내기 실패:', error);
-    }
-  };
-
-  const importData = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = JSON.parse(e.target?.result as string);
-        
-        if (data.customers) localStorage.setItem('crm-customers', data.customers);
-        if (data.appointments) localStorage.setItem('crm-appointments', data.appointments);
-        if (data.products) localStorage.setItem('crm-products', data.products);
-        if (data.finance) localStorage.setItem('crm-finance', data.finance);
-        if (data.settings) localStorage.setItem('crm-settings', data.settings);
-
-        setMessage('데이터가 성공적으로 가져와졌습니다. 페이지를 새로고침하세요.');
-        setTimeout(() => setMessage(''), 5000);
-      } catch (error) {
-        setMessage('데이터 가져오기에 실패했습니다.');
-        console.error('데이터 가져오기 실패:', error);
-      }
-    };
-    reader.readAsText(file);
   };
 
   return (
@@ -213,60 +153,6 @@ const Settings: React.FC = () => {
           </div>
         </div>
 
-        {/* 데이터 백업 및 복원 */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">데이터 백업 및 복원</h2>
-          <div className="space-y-4">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="autoBackup"
-                checked={settings.autoBackup}
-                onChange={(e) => handleInputChange('autoBackup', e.target.checked)}
-                className="mr-3"
-              />
-              <label htmlFor="autoBackup" className="text-sm font-medium text-gray-700">
-                자동 백업 사용
-              </label>
-            </div>
-            
-            {settings.autoBackup && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  백업 주기 (일)
-                </label>
-                <select
-                  value={settings.backupInterval}
-                  onChange={(e) => handleInputChange('backupInterval', parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value={1}>매일</option>
-                  <option value={7}>매주</option>
-                  <option value={30}>매월</option>
-                </select>
-              </div>
-            )}
-
-            <div className="flex space-x-4">
-              <button
-                onClick={exportData}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-              >
-                데이터 내보내기
-              </button>
-              <label className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors cursor-pointer">
-                데이터 가져오기
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={importData}
-                  className="hidden"
-                />
-              </label>
-            </div>
-          </div>
-        </div>
-
         {/* 기타 설정 */}
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">기타 설정</h2>
@@ -283,24 +169,6 @@ const Settings: React.FC = () => {
               <option value="en">English</option>
             </select>
           </div>
-        </div>
-
-        {/* Supabase MCP 연결 테스트 */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Supabase MCP 연결 테스트</h2>
-          <SupabaseMCPTest />
-        </div>
-
-        {/* 데이터 마이그레이션 */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">데이터 마이그레이션</h2>
-          <DataMigration />
-        </div>
-
-        {/* 샘플 데이터 생성 */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">샘플 데이터 생성</h2>
-          <SampleDataGeneratorComponent />
         </div>
 
         {/* 저장 버튼 */}
