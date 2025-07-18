@@ -34,7 +34,19 @@ const AppointmentManagement: React.FC = () => {
       if (customersResult.error) throw customersResult.error;
       if (productsResult.error) throw productsResult.error;
 
-      setAppointments(appointmentsResult.data || []);
+      // 데이터베이스 필드명을 클라이언트 필드명으로 변환
+      const transformedAppointments = (appointmentsResult.data || []).map((appointment: any) => ({
+        id: appointment.id,
+        customerId: appointment.customer_id,
+        productId: appointment.product_id,
+        datetime: appointment.datetime,
+        memo: appointment.memo,
+        status: appointment.status,
+        createdAt: appointment.created_at,
+        updatedAt: appointment.updated_at
+      }));
+
+      setAppointments(transformedAppointments);
       setCustomers(customersResult.data || []);
       setProducts(productsResult.data || []);
     } catch (error) {
@@ -47,15 +59,36 @@ const AppointmentManagement: React.FC = () => {
 
   const handleAddAppointment = async (appointment: Omit<Appointment, 'id'>) => {
     try {
+      // 클라이언트 필드명을 데이터베이스 필드명으로 변환
+      const dbAppointment = {
+        customer_id: appointment.customerId,
+        product_id: appointment.productId,
+        datetime: appointment.datetime,
+        memo: appointment.memo,
+        status: appointment.status || 'scheduled'
+      };
+
       const { data, error } = await supabase
         .from('appointments')
-        .insert([appointment])
+        .insert([dbAppointment])
         .select('*, customers(name, phone), products(name, price)');
 
       if (error) throw error;
       
-      if (data) {
-        setAppointments(prev => [data[0], ...prev]);
+      if (data && data.length > 0) {
+        // 새로 추가된 예약을 클라이언트 형식으로 변환
+        const newAppointment = {
+          id: data[0].id,
+          customerId: data[0].customer_id,
+          productId: data[0].product_id,
+          datetime: data[0].datetime,
+          memo: data[0].memo,
+          status: data[0].status,
+          createdAt: data[0].created_at,
+          updatedAt: data[0].updated_at
+        };
+        
+        setAppointments(prev => [newAppointment, ...prev]);
         setIsFormOpen(false);
       }
     } catch (error) {
@@ -66,17 +99,37 @@ const AppointmentManagement: React.FC = () => {
 
   const handleUpdateAppointment = async (id: string, updates: Partial<Appointment>) => {
     try {
+      // 클라이언트 필드명을 데이터베이스 필드명으로 변환
+      const dbUpdates: any = {};
+      if (updates.customerId) dbUpdates.customer_id = updates.customerId;
+      if (updates.productId) dbUpdates.product_id = updates.productId;
+      if (updates.datetime) dbUpdates.datetime = updates.datetime;
+      if (updates.memo !== undefined) dbUpdates.memo = updates.memo;
+      if (updates.status) dbUpdates.status = updates.status;
+
       const { data, error } = await supabase
         .from('appointments')
-        .update(updates)
+        .update(dbUpdates)
         .eq('id', id)
         .select('*, customers(name, phone), products(name, price)');
 
       if (error) throw error;
       
-      if (data) {
+      if (data && data.length > 0) {
+        // 업데이트된 예약을 클라이언트 형식으로 변환
+        const updatedAppointment = {
+          id: data[0].id,
+          customerId: data[0].customer_id,
+          productId: data[0].product_id,
+          datetime: data[0].datetime,
+          memo: data[0].memo,
+          status: data[0].status,
+          createdAt: data[0].created_at,
+          updatedAt: data[0].updated_at
+        };
+        
         setAppointments(prev => prev.map(appointment => 
-          appointment.id === id ? data[0] : appointment
+          appointment.id === id ? updatedAppointment : appointment
         ));
         setIsFormOpen(false);
         setEditingAppointment(null);
