@@ -28,7 +28,22 @@ const CustomerManagement: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setCustomers(data || []);
+      
+      // 데이터베이스 필드명을 클라이언트 필드명으로 변환
+      const transformedData = (data || []).map(customer => ({
+        id: customer.id,
+        name: customer.name,
+        phone: customer.phone,
+        birthDate: customer.birth_date,
+        skinType: customer.skin_type,
+        memo: customer.memo,
+        point: customer.point,
+        createdAt: customer.created_at,
+        updatedAt: customer.updated_at,
+        purchasedProducts: customer.purchased_products || []
+      }));
+      
+      setCustomers(transformedData);
     } catch (error) {
       setError(error instanceof Error ? error.message : '고객 데이터 로드 실패');
       console.error('고객 데이터 로드 오류:', error);
@@ -39,15 +54,40 @@ const CustomerManagement: React.FC = () => {
 
   const handleAddCustomer = async (customer: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
+      // 클라이언트 필드명을 데이터베이스 필드명으로 변환
+      const dbCustomer = {
+        name: customer.name,
+        phone: customer.phone,
+        birth_date: customer.birthDate,
+        skin_type: customer.skinType,
+        memo: customer.memo,
+        point: customer.point,
+        purchased_products: customer.purchasedProducts
+      };
+
       const { data, error } = await supabase
         .from('customers')
-        .insert([customer])
+        .insert([dbCustomer])
         .select();
 
       if (error) throw error;
       
-      if (data) {
-        setCustomers(prev => [data[0], ...prev]);
+      if (data && data.length > 0) {
+        // 새로 추가된 고객을 클라이언트 형식으로 변환
+        const newCustomer = {
+          id: data[0].id,
+          name: data[0].name,
+          phone: data[0].phone,
+          birthDate: data[0].birth_date,
+          skinType: data[0].skin_type,
+          memo: data[0].memo,
+          point: data[0].point,
+          createdAt: data[0].created_at,
+          updatedAt: data[0].updated_at,
+          purchasedProducts: data[0].purchased_products || []
+        };
+        
+        setCustomers(prev => [newCustomer, ...prev]);
         setIsFormOpen(false);
       }
     } catch (error) {
@@ -58,17 +98,41 @@ const CustomerManagement: React.FC = () => {
 
   const handleUpdateCustomer = async (id: string, updates: Partial<Customer>) => {
     try {
+      // 클라이언트 필드명을 데이터베이스 필드명으로 변환
+      const dbUpdates: any = {};
+      if (updates.name) dbUpdates.name = updates.name;
+      if (updates.phone) dbUpdates.phone = updates.phone;
+      if (updates.birthDate) dbUpdates.birth_date = updates.birthDate;
+      if (updates.skinType) dbUpdates.skin_type = updates.skinType;
+      if (updates.memo !== undefined) dbUpdates.memo = updates.memo;
+      if (updates.point !== undefined) dbUpdates.point = updates.point;
+      if (updates.purchasedProducts) dbUpdates.purchased_products = updates.purchasedProducts;
+
       const { data, error } = await supabase
         .from('customers')
-        .update(updates)
+        .update(dbUpdates)
         .eq('id', id)
         .select();
 
       if (error) throw error;
       
-      if (data) {
+      if (data && data.length > 0) {
+        // 업데이트된 고객을 클라이언트 형식으로 변환
+        const updatedCustomer = {
+          id: data[0].id,
+          name: data[0].name,
+          phone: data[0].phone,
+          birthDate: data[0].birth_date,
+          skinType: data[0].skin_type,
+          memo: data[0].memo,
+          point: data[0].point,
+          createdAt: data[0].created_at,
+          updatedAt: data[0].updated_at,
+          purchasedProducts: data[0].purchased_products || []
+        };
+        
         setCustomers(prev => prev.map(customer => 
-          customer.id === id ? data[0] : customer
+          customer.id === id ? updatedCustomer : customer
         ));
         setIsEditModalOpen(false);
         setSelectedCustomer(null);

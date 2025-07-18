@@ -10,13 +10,22 @@ if (!supabaseAnonKey) {
   throw new Error('Supabase anon key가 누락되었습니다. VITE_SUPABASE_ANON_KEY 환경변수를 확인하세요.');
 }
 
-// Supabase 클라이언트 생성 시 옵션 추가
-const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true
+// 싱글톤 패턴으로 Supabase 클라이언트 생성
+let supabaseInstance: any = null;
+
+const createSupabaseClient = () => {
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true
+      }
+    });
   }
-});
+  return supabaseInstance;
+};
+
+const supabase = createSupabaseClient();
 
 export default supabase; 

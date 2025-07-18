@@ -9,6 +9,7 @@ CREATE TABLE customers (
     skin_type VARCHAR(20) CHECK (skin_type IN ('dry', 'oily', 'combination', 'sensitive', 'normal')),
     memo TEXT,
     point INTEGER DEFAULT 0,
+    purchased_products TEXT[] DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
