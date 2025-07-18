@@ -17,13 +17,6 @@ DROP FUNCTION IF EXISTS get_customer_appointments(UUID) CASCADE;
 DROP FUNCTION IF EXISTS get_monthly_finance_stats(VARCHAR) CASCADE;
 DROP FUNCTION IF EXISTS update_updated_at_column() CASCADE;
 
--- 기존 트리거 삭제
-DROP TRIGGER IF EXISTS update_customers_updated_at ON customers;
-DROP TRIGGER IF EXISTS update_products_updated_at ON products;
-DROP TRIGGER IF EXISTS update_appointments_updated_at ON appointments;
-DROP TRIGGER IF EXISTS update_finance_updated_at ON finance;
-DROP TRIGGER IF EXISTS update_settings_updated_at ON settings;
-
 -- 1. 고객 테이블 (customers)
 CREATE TABLE customers (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
