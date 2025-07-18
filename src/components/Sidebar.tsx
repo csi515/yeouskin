@@ -1,5 +1,6 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -7,6 +8,9 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
+  const { signOut, user } = useAuth();
+  const navigate = useNavigate();
+
   const menuItems = [
     { path: '/dashboard', icon: '📊', label: '대시보드' },
     { path: '/customers', icon: '👥', label: '고객 관리' },
@@ -16,12 +20,28 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
     { path: '/settings', icon: '⚙️', label: '설정' },
   ];
 
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate('/login');
+    } catch (error) {
+      console.error('로그아웃 오류:', error);
+    }
+  };
+
   return (
-    <div className={`bg-white shadow-lg transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'}`}>
+    <div className={`bg-white shadow-lg transition-all duration-300 relative ${collapsed ? 'w-16' : 'w-64'}`}>
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           {!collapsed && (
-            <h1 className="text-xl font-bold text-gray-800">CRM 시스템</h1>
+            <div>
+              <h1 className="text-xl font-bold text-gray-800">CRM 시스템</h1>
+              {user && (
+                <p className="text-sm text-gray-600 mt-1">
+                  {user.name}님 환영합니다
+                </p>
+              )}
+            </div>
           )}
           <button
             onClick={onToggle}
@@ -55,6 +75,18 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           ))}
         </ul>
       </nav>
+
+      {/* 로그아웃 버튼 */}
+      <div className="absolute bottom-4 left-4 right-4">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center p-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+          title={collapsed ? '로그아웃' : undefined}
+        >
+          <span className="text-xl mr-3">🚪</span>
+          {!collapsed && <span>로그아웃</span>}
+        </button>
+      </div>
     </div>
   );
 };

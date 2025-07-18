@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import supabase from '../utils/supabaseClient';
+import { supabase } from '../utils/supabase';
 import { Customer, Appointment, Product, FinanceRecord } from '../types';
 
 const Dashboard: React.FC = () => {

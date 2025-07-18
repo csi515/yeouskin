@@ -1,4 +1,4 @@
-import supabase from './supabaseClient';
+import { supabase } from './supabase';
 import { Customer, Product, Appointment, FinanceRecord } from '../types';
 
 export class SupabaseMigrator {

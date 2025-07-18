@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import supabase from '../utils/supabaseClient';
+import { supabase } from '../utils/supabase';
 import CustomerTable from '../components/CustomerTable';
 import CustomerForm from '../components/CustomerForm';
 import CustomerDetailsModal from '../components/CustomerDetailsModal';
 import EditCustomerModal from '../components/EditCustomerModal';
 import { Customer } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 const CustomerManagement: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -14,6 +15,7 @@ const CustomerManagement: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     loadCustomers();
@@ -54,6 +56,11 @@ const CustomerManagement: React.FC = () => {
 
   const handleAddCustomer = async (customer: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
+      if (!user?.id) {
+        setError('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
+        return;
+      }
+
       // 클라이언트 필드명을 데이터베이스 필드명으로 변환
       const dbCustomer = {
         name: customer.name,
@@ -62,7 +69,8 @@ const CustomerManagement: React.FC = () => {
         skin_type: customer.skinType,
         memo: customer.memo,
         point: customer.point,
-        purchased_products: customer.purchasedProducts
+        purchased_products: customer.purchasedProducts,
+        user_id: user.id
       };
 
       const { data, error } = await supabase

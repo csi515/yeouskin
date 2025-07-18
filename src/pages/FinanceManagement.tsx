@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import supabase from '../utils/supabaseClient';
+import { supabase } from '../utils/supabase';
 import { FinanceRecord } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 const FinanceManagement: React.FC = () => {
   const [financeRecords, setFinanceRecords] = useState<FinanceRecord[]>([]);
@@ -11,6 +12,7 @@ const FinanceManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
+  const { user } = useAuth();
 
   useEffect(() => {
     loadFinanceRecords();
@@ -36,9 +38,13 @@ const FinanceManagement: React.FC = () => {
 
   const handleAddRecord = async (record: Omit<FinanceRecord, 'id'>) => {
     try {
+      if (!user) {
+        throw new Error('사용자 인증이 필요합니다.');
+      }
+
       const { data, error } = await supabase
         .from('finance')
-        .insert([record])
+        .insert([{ ...record, user_id: user.id }])
         .select();
 
       if (error) throw error;

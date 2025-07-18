@@ -2,6 +2,9 @@ import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
+import ProtectedRoute from './components/ProtectedRoute';
+import Login from './pages/Login';
+import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import CustomerManagement from './pages/CustomerManagement';
 import ProductManagement from './pages/ProductManagement';
@@ -9,6 +12,7 @@ import AppointmentManagement from './pages/AppointmentManagement';
 import FinanceManagement from './pages/FinanceManagement';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
+import { AuthProvider } from './contexts/AuthContext';
 import './App.css';
 
 // 라우팅 핸들러 컴포넌트
@@ -77,25 +81,68 @@ const ErrorFallback: React.FC = () => (
 function App() {
   return (
     <ErrorBoundary fallback={<ErrorFallback />}>
-      <Router>
-        <RoutingHandler />
-        <Layout>
-          <ErrorBoundary fallback={<ErrorFallback />}>
-            <Suspense fallback={<LoadingFallback />}>
-              <Routes>
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/customers" element={<CustomerManagement />} />
-                <Route path="/products" element={<ProductManagement />} />
-                <Route path="/appointments" element={<AppointmentManagement />} />
-                <Route path="/finance" element={<FinanceManagement />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </ErrorBoundary>
-        </Layout>
-      </Router>
+      <AuthProvider>
+        <Router>
+          <RoutingHandler />
+          <Routes>
+            {/* 공개 라우트 */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            
+            {/* 보호된 라우트 */}
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Navigate to="/dashboard" replace />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Dashboard />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/customers" element={
+              <ProtectedRoute>
+                <Layout>
+                  <CustomerManagement />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/products" element={
+              <ProtectedRoute>
+                <Layout>
+                  <ProductManagement />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/appointments" element={
+              <ProtectedRoute>
+                <Layout>
+                  <AppointmentManagement />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/finance" element={
+              <ProtectedRoute>
+                <Layout>
+                  <FinanceManagement />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Settings />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Router>
+      </AuthProvider>
     </ErrorBoundary>
   );
 }

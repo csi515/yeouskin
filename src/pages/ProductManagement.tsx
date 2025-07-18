@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import supabase from '../utils/supabaseClient';
+import { supabase } from '../utils/supabase';
 import ProductTable from '../components/ProductTable';
 import ProductForm from '../components/ProductForm';
 import { Product } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 const ProductManagement: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -10,6 +11,7 @@ const ProductManagement: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     loadProducts();
@@ -35,9 +37,14 @@ const ProductManagement: React.FC = () => {
 
   const handleAddProduct = async (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
+      if (!user?.id) {
+        setError('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('products')
-        .insert([product])
+        .insert([{ ...product, user_id: user.id }])
         .select();
 
       if (error) throw error;

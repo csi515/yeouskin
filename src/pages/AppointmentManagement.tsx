@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import supabase from '../utils/supabaseClient';
+import { supabase } from '../utils/supabase';
 import CalendarPanel from '../components/CalendarPanel';
 import ReservationListPanel from '../components/ReservationListPanel';
 import AppointmentForm from '../components/AppointmentForm';
 import { Appointment, Customer, Product } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 const AppointmentManagement: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -14,6 +15,7 @@ const AppointmentManagement: React.FC = () => {
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     loadData();
@@ -59,8 +61,13 @@ const AppointmentManagement: React.FC = () => {
 
   const handleAddAppointment = async (appointment: Omit<Appointment, 'id'>) => {
     try {
+      if (!user) {
+        throw new Error('사용자 인증이 필요합니다.');
+      }
+
       // 클라이언트 필드명을 데이터베이스 필드명으로 변환
       const dbAppointment = {
+        user_id: user.id,
         customer_id: appointment.customerId,
         product_id: appointment.productId,
         datetime: appointment.datetime,

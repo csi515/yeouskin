@@ -13,6 +13,13 @@ export interface AuthCredentials {
   password: string;
 }
 
+export interface AuthState {
+  user: User | null;
+  session: any | null;
+  loading: boolean;
+  error: string | null;
+}
+
 // Customer Types
 export interface Customer {
   id: string;
