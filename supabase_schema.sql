@@ -1,4 +1,28 @@
 -- Supabase CRM 시스템 테이블 구조
+-- 기존 데이터 삭제 및 테이블 재생성
+
+-- 기존 테이블 및 관련 객체 삭제 (CASCADE로 의존성 있는 객체도 함께 삭제)
+DROP TABLE IF EXISTS finance CASCADE;
+DROP TABLE IF EXISTS appointments CASCADE;
+DROP TABLE IF EXISTS customers CASCADE;
+DROP TABLE IF EXISTS products CASCADE;
+DROP TABLE IF EXISTS settings CASCADE;
+
+-- 기존 뷰 삭제
+DROP VIEW IF EXISTS appointment_details CASCADE;
+DROP VIEW IF EXISTS finance_summary CASCADE;
+
+-- 기존 함수 삭제
+DROP FUNCTION IF EXISTS get_customer_appointments(UUID) CASCADE;
+DROP FUNCTION IF EXISTS get_monthly_finance_stats(VARCHAR) CASCADE;
+DROP FUNCTION IF EXISTS update_updated_at_column() CASCADE;
+
+-- 기존 트리거 삭제
+DROP TRIGGER IF EXISTS update_customers_updated_at ON customers;
+DROP TRIGGER IF EXISTS update_products_updated_at ON products;
+DROP TRIGGER IF EXISTS update_appointments_updated_at ON appointments;
+DROP TRIGGER IF EXISTS update_finance_updated_at ON finance;
+DROP TRIGGER IF EXISTS update_settings_updated_at ON settings;
 
 -- 1. 고객 테이블 (customers)
 CREATE TABLE customers (
