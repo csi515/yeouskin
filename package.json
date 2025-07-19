@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Customer Relationship Management System for Esthetic Shop",
   "main": "src/main.tsx",
-  "homepage": "https://yeouskin.vercel.app",
   "repository": {
     "type": "git",
     "url": "https://github.com/csi515/yeouskin.git"
