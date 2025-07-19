@@ -114,14 +114,19 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
       console.log('설정 저장 시작 - 사용자 ID:', user.id);
       console.log('저장할 설정:', settings);
 
-      // 먼저 appointment_time_interval 컬럼이 있는지 확인
-      const { data: columnCheck } = await supabase
+      // 먼저 기존 설정이 있는지 확인
+      const { data: existingSettings, error: checkError } = await supabase
         .from('settings')
-        .select('appointment_time_interval')
-        .limit(1);
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('기존 설정 확인 실패:', checkError);
+        throw checkError;
+      }
 
       const settingsData: any = {
-        user_id: user.id,
         business_name: settings.businessName,
         business_phone: settings.businessPhone,
         business_address: settings.businessAddress,
@@ -130,16 +135,42 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         updated_at: new Date().toISOString()
       };
 
-      // 컬럼이 존재하는 경우에만 appointment_time_interval 추가
-      if (columnCheck !== null) {
-        settingsData.appointment_time_interval = settings.appointmentTimeInterval;
+      // appointment_time_interval 컬럼이 있는지 확인하고 추가
+      try {
+        const { data: columnCheck } = await supabase
+          .from('settings')
+          .select('appointment_time_interval')
+          .limit(1);
+        
+        if (columnCheck !== null) {
+          settingsData.appointment_time_interval = settings.appointmentTimeInterval;
+        }
+      } catch (error) {
+        console.log('appointment_time_interval 컬럼이 없습니다.');
       }
 
       console.log('Supabase에 저장할 데이터:', settingsData);
 
-      const { error } = await supabase
-        .from('settings')
-        .upsert(settingsData);
+      let error;
+      if (existingSettings) {
+        // 기존 설정이 있으면 업데이트
+        console.log('기존 설정 업데이트 - ID:', existingSettings.id);
+        const { error: updateError } = await supabase
+          .from('settings')
+          .update(settingsData)
+          .eq('id', existingSettings.id);
+        error = updateError;
+      } else {
+        // 기존 설정이 없으면 새로 생성
+        console.log('새 설정 생성');
+        const { error: insertError } = await supabase
+          .from('settings')
+          .insert([{
+            user_id: user.id,
+            ...settingsData
+          }]);
+        error = insertError;
+      }
 
       if (error) {
         console.error('설정 저장 실패:', error);
