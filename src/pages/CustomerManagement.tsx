@@ -300,15 +300,18 @@ const CustomerManagement: React.FC = () => {
           customer.id === id ? updatedCustomer : customer
         ));
 
-        // 데이터 다시 로드하여 최신 상태 반영
-        await loadAppointments();
-        await loadPurchases();
-        
-        // 저장 성공 알림
+        // 저장 성공 알림을 먼저 표시
         alert('고객 정보가 성공적으로 저장되었습니다!');
         
+        // 모달 닫기
         setIsEditModalOpen(false);
         setSelectedCustomer(null);
+        
+        // 데이터 다시 로드하여 최신 상태 반영 (비동기로 처리)
+        setTimeout(() => {
+          loadAppointments();
+          loadPurchases();
+        }, 100);
       }
     } catch (error) {
       setError(error instanceof Error ? error.message : '고객 업데이트 실패');
