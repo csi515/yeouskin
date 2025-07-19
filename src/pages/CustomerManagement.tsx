@@ -176,6 +176,10 @@ const CustomerManagement: React.FC = () => {
         };
         
         setCustomers(prev => [newCustomer, ...prev]);
+        
+        // 고객 추가 성공 알림
+        alert('새 고객이 성공적으로 추가되었습니다!');
+        
         setIsFormOpen(false);
       }
     } catch (error) {
@@ -300,6 +304,9 @@ const CustomerManagement: React.FC = () => {
         await loadAppointments();
         await loadPurchases();
         
+        // 저장 성공 알림
+        alert('고객 정보가 성공적으로 저장되었습니다!');
+        
         setIsEditModalOpen(false);
         setSelectedCustomer(null);
       }
@@ -319,6 +326,9 @@ const CustomerManagement: React.FC = () => {
       if (error) throw error;
       
       setCustomers(prev => prev.filter(customer => customer.id !== id));
+      
+      // 고객 삭제 성공 알림
+      alert('고객이 성공적으로 삭제되었습니다!');
     } catch (error) {
       setError(error instanceof Error ? error.message : '고객 삭제 실패');
       console.error('고객 삭제 오류:', error);

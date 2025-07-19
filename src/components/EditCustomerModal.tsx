@@ -86,6 +86,10 @@ const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
     };
 
     onSubmit(updatedCustomer, editAppointments, purchaseItems);
+    
+    // 저장 성공 팝업 표시
+    alert('고객 정보가 성공적으로 저장되었습니다!');
+    
     onClose();
   };
 
