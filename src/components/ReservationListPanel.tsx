@@ -10,7 +10,6 @@ interface ReservationListPanelProps {
   onAddReservation: () => void;
   onEditReservation: (appointment: Appointment) => void;
   onDeleteReservation: (id: string) => void;
-  onViewDetail: (appointment: Appointment) => void;
 }
 
 const ReservationListPanel: React.FC<ReservationListPanelProps> = ({
@@ -21,7 +20,6 @@ const ReservationListPanel: React.FC<ReservationListPanelProps> = ({
   onAddReservation,
   onEditReservation,
   onDeleteReservation,
-  onViewDetail,
 }) => {
   // 선택된 날짜의 예약을 시간순으로 정렬
   const dayAppointments = appointments
@@ -65,9 +63,6 @@ const ReservationListPanel: React.FC<ReservationListPanelProps> = ({
                       <div className="text-lg font-medium text-gray-900">
                         {customer?.name || '고객'}
                       </div>
-                      <div className="text-sm text-gray-500">
-                        ({customer?.phone || '전화번호 없음'})
-                      </div>
                     </div>
                     <div className="text-gray-700 mb-2">
                       📋 {product?.name || '상품명 없음'}
@@ -79,12 +74,6 @@ const ReservationListPanel: React.FC<ReservationListPanelProps> = ({
                     )}
                   </div>
                   <div className="flex space-x-2 ml-4">
-                    <button
-                      onClick={() => onViewDetail(appointment)}
-                      className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
-                    >
-                      상세
-                    </button>
                     <button
                       onClick={() => onEditReservation(appointment)}
                       className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"

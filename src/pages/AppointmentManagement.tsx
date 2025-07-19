@@ -224,10 +224,6 @@ const AppointmentManagement: React.FC = () => {
             onAddReservation={() => setIsFormOpen(true)}
             onEditReservation={handleEditClick}
             onDeleteReservation={handleDeleteAppointment}
-            onViewDetail={(appointment) => {
-              setEditingAppointment(appointment);
-              setIsFormOpen(true);
-            }}
           />
         </div>
       </div>
