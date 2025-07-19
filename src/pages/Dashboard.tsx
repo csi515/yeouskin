@@ -60,6 +60,16 @@ const Dashboard: React.FC = () => {
     return appointmentDate.toISOString().split('T')[0] === todayString;
   });
 
+  // 이번 달 예약 수
+  const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const currentMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  
+  const monthlyAppointments = appointments.filter(appointment => {
+    if (!appointment.datetime) return false;
+    const appointmentDate = new Date(appointment.datetime);
+    return appointmentDate >= currentMonthStart && appointmentDate <= currentMonthEnd;
+  });
+
   // 이번 달 수입
   const currentMonth = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
   const monthlyIncome = financeRecords
@@ -199,8 +209,8 @@ const Dashboard: React.FC = () => {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">예약 현황</h3>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-gray-600">총 예약 수</span>
-              <span className="font-semibold">{appointments.length}건</span>
+              <span className="text-gray-600">이번 달 예약</span>
+              <span className="font-semibold">{monthlyAppointments.length}건</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">오늘 예약</span>
