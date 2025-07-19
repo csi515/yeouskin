@@ -32,7 +32,10 @@ const CalendarPanel: React.FC<CalendarPanelProps> = ({
 
   // 달력 타일에 예약 요약 표시
   const tileContent = ({ date }: { date: Date }) => {
-    const dayAppointments = appointments.filter(a => isSameDay(parseISO(a.datetime), date));
+    const dayAppointments = appointments
+      .filter(a => isSameDay(parseISO(a.datetime), date))
+      .sort((a, b) => parseISO(a.datetime).getTime() - parseISO(b.datetime).getTime());
+    
     if (dayAppointments.length === 0) return null;
     
     return (
@@ -46,8 +49,10 @@ const CalendarPanel: React.FC<CalendarPanelProps> = ({
           const time = format(parseISO(a.datetime), 'HH:mm');
           return (
             <div key={a.id} className="text-xs bg-blue-100 rounded px-1 py-0.5">
-              <div className="font-medium text-blue-800">{time}</div>
-              <div className="truncate">{customer?.name || '고객'}</div>
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-blue-800">{time}</span>
+                <span className="truncate ml-1">{customer?.name || '고객'}</span>
+              </div>
             </div>
           );
         })}
@@ -71,7 +76,7 @@ const CalendarPanel: React.FC<CalendarPanelProps> = ({
           tileContent={tileContent}
           calendarType="gregory"
           className="w-full border-none font-inherit"
-          tileClassName="h-28 p-2 relative"
+          tileClassName="h-28 p-3 relative min-w-[120px]"
           navigationLabel={({ date }) => format(date, 'yyyy년 MM월')}
         />
       </div>
