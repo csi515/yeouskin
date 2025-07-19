@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Appointment, Customer, Product } from '../types';
+import { useSettings } from '../contexts/SettingsContext';
 
 interface AppointmentFormProps {
   isOpen: boolean;
@@ -21,6 +22,24 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   onClose,
   onSubmit,
 }) => {
+  const { settings } = useSettings();
+
+  // 시간 단위에 따른 시간 옵션 생성
+  const generateTimeOptions = () => {
+    const options = [];
+    const interval = settings.appointmentTimeInterval;
+    
+    for (let hour = 9; hour <= 20; hour++) {
+      for (let minute = 0; minute < 60; minute += interval) {
+        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        options.push(timeString);
+      }
+    }
+    
+    return options;
+  };
+
+  const timeOptions = generateTimeOptions();
   const [form, setForm] = useState({
     customerId: '',
     productId: '',
@@ -150,14 +169,19 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             </div>
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">시간 *</label>
-              <input
-                type="time"
+              <select
                 name="time"
                 value={form.time}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
-              />
+              >
+                {timeOptions.map(time => (
+                  <option key={time} value={time}>
+                    {time}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
