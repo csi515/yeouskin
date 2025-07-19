@@ -4,7 +4,6 @@ import { Customer } from '../types';
 interface CustomerTableProps {
   customers: Customer[];
   onEdit: (customer: Customer) => void;
-  onViewDetails: (customer: Customer) => void;
   onDelete: (customerId: string) => void;
   getVoucherSummary: (customerId: string) => string;
 }
@@ -12,7 +11,6 @@ interface CustomerTableProps {
 const CustomerTable: React.FC<CustomerTableProps> = ({
   customers,
   onEdit,
-  onViewDetails,
   onDelete,
   getVoucherSummary,
 }) => {
@@ -77,12 +75,6 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <div className="flex space-x-2">
-                  <button
-                    onClick={() => customer && onViewDetails(customer)}
-                    className="text-blue-600 hover:text-blue-900 bg-blue-100 hover:bg-blue-200 px-3 py-1 rounded-md text-xs"
-                  >
-                    상세보기
-                  </button>
                   <button
                     onClick={() => customer && onEdit(customer)}
                     className="text-green-600 hover:text-green-900 bg-green-100 hover:bg-green-200 px-3 py-1 rounded-md text-xs"

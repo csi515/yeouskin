@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../utils/supabase';
 import CustomerTable from '../components/CustomerTable';
 import CustomerForm from '../components/CustomerForm';
-import CustomerDetailsModal from '../components/CustomerDetailsModal';
 import EditCustomerModal from '../components/EditCustomerModal';
 import { Customer, Product, Purchase, Appointment } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -14,7 +13,6 @@ const CustomerManagement: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -327,11 +325,6 @@ const CustomerManagement: React.FC = () => {
     }
   };
 
-  const handleCustomerClick = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setIsDetailsModalOpen(true);
-  };
-
   const handleEditClick = (customer: Customer) => {
     setSelectedCustomer(customer);
     setIsEditModalOpen(true);
@@ -372,7 +365,6 @@ const CustomerManagement: React.FC = () => {
       <CustomerTable
         customers={customers}
         onEdit={handleEditClick}
-        onViewDetails={handleCustomerClick}
         onDelete={handleDeleteCustomer}
         getVoucherSummary={(customerId) => {
           // 간단한 바우처 요약 반환 (실제로는 더 복잡한 로직 필요)
@@ -388,18 +380,7 @@ const CustomerManagement: React.FC = () => {
         />
       )}
 
-      {isDetailsModalOpen && selectedCustomer && (
-        <CustomerDetailsModal
-          customer={selectedCustomer}
-          isOpen={isDetailsModalOpen}
-          appointments={[]} // 실제로는 고객의 예약 데이터를 가져와야 함
-          treatmentRecords={[]} // 실제로는 고객의 시술 기록을 가져와야 함
-          onClose={() => {
-            setIsDetailsModalOpen(false);
-            setSelectedCustomer(null);
-          }}
-        />
-      )}
+
 
       {isEditModalOpen && selectedCustomer && (
         <EditCustomerModal
