@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useSettings } from '../contexts/SettingsContext';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -9,6 +10,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
   const { signOut, user } = useAuth();
+  const { settings } = useSettings();
   const navigate = useNavigate();
 
   const menuItems = [
@@ -35,7 +37,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         <div className="flex items-center justify-between">
           {!collapsed && (
             <div>
-              <h1 className="text-xl font-bold text-gray-800">CRM 시스템</h1>
+              <h1 className="text-xl font-bold text-gray-800">{settings.businessName}</h1>
               {user && (
                 <p className="text-sm text-gray-600 mt-1">
                   {user.name}님 환영합니다

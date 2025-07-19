@@ -13,6 +13,7 @@ import FinanceManagement from './pages/FinanceManagement';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 import { AuthProvider } from './contexts/AuthContext';
+import { SettingsProvider } from './contexts/SettingsContext';
 import './App.css';
 
 // 라우팅 핸들러 컴포넌트
@@ -82,9 +83,10 @@ function App() {
   return (
     <ErrorBoundary fallback={<ErrorFallback />}>
       <AuthProvider>
-        <Router>
-          <RoutingHandler />
-          <Routes>
+        <SettingsProvider>
+          <Router>
+            <RoutingHandler />
+            <Routes>
             {/* 공개 라우트 */}
             <Route path="/login" element={<Login />} />
             <Route path="/reset-password" element={<ResetPassword />} />
@@ -142,6 +144,7 @@ function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Router>
+        </SettingsProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

@@ -1,65 +1,23 @@
-import React, { useState, useEffect } from 'react';
-
-interface Settings {
-  businessName: string;
-  businessPhone: string;
-  businessAddress: string;
-  businessHours: string;
-  defaultAppointmentDuration: number;
-  language: string;
-}
+import React, { useState } from 'react';
+import { useSettings } from '../contexts/SettingsContext';
 
 const Settings: React.FC = () => {
-  const [settings, setSettings] = useState<Settings>({
-    businessName: '',
-    businessPhone: '',
-    businessAddress: '',
-    businessHours: '',
-    defaultAppointmentDuration: 60,
-    language: 'ko'
-  });
-
-  const [isLoading, setIsLoading] = useState(false);
+  const { settings, updateSettings, saveSettings, isLoading } = useSettings();
   const [message, setMessage] = useState('');
 
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
+  const handleSave = async () => {
     try {
-      const savedSettings = localStorage.getItem('crm-settings');
-      if (savedSettings) {
-        const parsed = JSON.parse(savedSettings);
-        setSettings(prev => ({ ...prev, ...parsed }));
-      }
-    } catch (error) {
-      console.error('설정 로드 실패:', error);
-    }
-  };
-
-  const saveSettings = async () => {
-    setIsLoading(true);
-    setMessage('');
-
-    try {
-      // 실제 환경에서는 API 호출
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      localStorage.setItem('crm-settings', JSON.stringify(settings));
+      await saveSettings();
       setMessage('설정이 성공적으로 저장되었습니다.');
-      
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
       setMessage('설정 저장에 실패했습니다.');
       console.error('설정 저장 실패:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const handleInputChange = (key: keyof Settings, value: string | number | boolean) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
+  const handleInputChange = (key: keyof typeof settings, value: string | number) => {
+    updateSettings({ [key]: value });
   };
 
   return (

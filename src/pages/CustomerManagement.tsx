@@ -4,11 +4,14 @@ import CustomerTable from '../components/CustomerTable';
 import CustomerForm from '../components/CustomerForm';
 import CustomerDetailsModal from '../components/CustomerDetailsModal';
 import EditCustomerModal from '../components/EditCustomerModal';
-import { Customer } from '../types';
+import { Customer, Product, Purchase, Appointment } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 
 const CustomerManagement: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -19,6 +22,9 @@ const CustomerManagement: React.FC = () => {
 
   useEffect(() => {
     loadCustomers();
+    loadProducts();
+    loadPurchases();
+    loadAppointments();
   }, []);
 
   const loadCustomers = async () => {
@@ -32,7 +38,7 @@ const CustomerManagement: React.FC = () => {
       if (error) throw error;
       
       // 데이터베이스 필드명을 클라이언트 필드명으로 변환
-      const transformedData = (data || []).map(customer => ({
+      const transformedData = (data || []).map((customer: any) => ({
         id: customer.id,
         name: customer.name,
         phone: customer.phone,
@@ -51,6 +57,82 @@ const CustomerManagement: React.FC = () => {
       console.error('고객 데이터 로드 오류:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      const transformedData = (data || []).map((product: any) => ({
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        count: product.count,
+        category: product.category,
+        createdAt: product.created_at,
+        updatedAt: product.updated_at
+      }));
+      
+      setProducts(transformedData);
+    } catch (error) {
+      console.error('상품 데이터 로드 오류:', error);
+    }
+  };
+
+  const loadPurchases = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('purchases')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      const transformedData = (data || []).map((purchase: any) => ({
+        id: purchase.id,
+        customerId: purchase.customer_id,
+        productId: purchase.product_id,
+        quantity: purchase.quantity,
+        purchaseDate: purchase.purchase_date,
+        createdAt: purchase.created_at,
+        updatedAt: purchase.updated_at
+      }));
+      
+      setPurchases(transformedData);
+    } catch (error) {
+      console.error('구매 데이터 로드 오류:', error);
+    }
+  };
+
+  const loadAppointments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('*')
+        .order('datetime', { ascending: false });
+
+      if (error) throw error;
+      
+      const transformedData = (data || []).map((appointment: any) => ({
+        id: appointment.id,
+        customerId: appointment.customer_id,
+        productId: appointment.product_id,
+        datetime: appointment.datetime,
+        memo: appointment.memo,
+        createdAt: appointment.created_at,
+        updatedAt: appointment.updated_at
+      }));
+      
+      setAppointments(transformedData);
+    } catch (error) {
+      console.error('예약 데이터 로드 오류:', error);
     }
   };
 
@@ -244,9 +326,9 @@ const CustomerManagement: React.FC = () => {
       {isEditModalOpen && selectedCustomer && (
         <EditCustomerModal
           customer={selectedCustomer}
-          products={[]} // 실제로는 상품 데이터를 가져와야 함
-          purchases={[]} // 실제로는 구매 데이터를 가져와야 함
-          appointments={[]} // 실제로는 고객의 예약 데이터를 가져와야 함
+          products={products}
+          purchases={purchases}
+          appointments={appointments}
           isOpen={isEditModalOpen}
           onSubmit={(customer, appointments, purchaseItems) => {
             handleUpdateCustomer(customer.id, customer);
