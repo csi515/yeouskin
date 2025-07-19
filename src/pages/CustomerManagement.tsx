@@ -237,15 +237,24 @@ const CustomerManagement: React.FC = () => {
 
       // 구매 내역 업데이트
       if (purchaseItems) {
+        console.log('구매 내역 저장 시작:', purchaseItems);
+        
         // 기존 구매 내역 삭제
         await supabase
           .from('purchases')
           .delete()
           .eq('customer_id', id);
 
+        // 유효한 구매 내역만 필터링 (상품이 선택된 항목만)
+        const validPurchaseItems = purchaseItems.filter(item => 
+          item.productId && item.productId.trim() !== '' && item.quantity > 0
+        );
+
+        console.log('유효한 구매 내역:', validPurchaseItems);
+
         // 새로운 구매 내역 추가
-        if (purchaseItems.length > 0) {
-          const purchaseData = purchaseItems.map(item => ({
+        if (validPurchaseItems.length > 0) {
+          const purchaseData = validPurchaseItems.map(item => ({
             customer_id: id,
             product_id: item.productId,
             quantity: item.quantity,
@@ -253,13 +262,20 @@ const CustomerManagement: React.FC = () => {
             user_id: user?.id
           }));
 
+          console.log('저장할 구매 데이터:', purchaseData);
+
           const { error: purchaseError } = await supabase
             .from('purchases')
             .insert(purchaseData);
 
           if (purchaseError) {
             console.error('구매 내역 저장 오류:', purchaseError);
+            throw new Error(`구매 내역 저장 실패: ${purchaseError.message}`);
+          } else {
+            console.log('구매 내역 저장 성공');
           }
+        } else {
+          console.log('저장할 유효한 구매 내역이 없습니다.');
         }
       }
       
