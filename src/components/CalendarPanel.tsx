@@ -39,11 +39,8 @@ const CalendarPanel: React.FC<CalendarPanelProps> = ({
     if (dayAppointments.length === 0) return null;
     
     return (
-      <div className="mt-1 space-y-1">
-        <div className="text-xs font-medium text-blue-600">
-          {dayAppointments.length}건
-        </div>
-        {dayAppointments.slice(0, 3).map((a) => {
+      <div className="mt-1 space-y-0.5">
+        {dayAppointments.slice(0, 4).map((a) => {
           const customer = customers.find(c => c.id === a.customerId);
           const product = products.find(p => p.id === a.productId);
           const time = format(parseISO(a.datetime), 'HH:mm');
@@ -56,8 +53,8 @@ const CalendarPanel: React.FC<CalendarPanelProps> = ({
             </div>
           );
         })}
-        {dayAppointments.length > 3 && (
-          <div className="text-xs text-gray-400">+{dayAppointments.length - 3}건</div>
+        {dayAppointments.length > 4 && (
+          <div className="text-xs text-gray-400">+{dayAppointments.length - 4}건</div>
         )}
       </div>
     );
@@ -76,7 +73,7 @@ const CalendarPanel: React.FC<CalendarPanelProps> = ({
           tileContent={tileContent}
           calendarType="gregory"
           className="w-full border-none font-inherit"
-          tileClassName="h-28 p-3 relative min-w-[120px]"
+          tileClassName="h-24 p-2 relative min-w-[100px]"
           navigationLabel={({ date }) => format(date, 'yyyy년 MM월')}
         />
       </div>
