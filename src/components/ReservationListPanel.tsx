@@ -30,21 +30,13 @@ const ReservationListPanel: React.FC<ReservationListPanelProps> = ({
 
   return (
     <div className="bg-white rounded-lg shadow p-6 h-full">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900">
-            {format(selectedDate, 'yyyy년 MM월 dd일')} 예약
-          </h2>
-          <p className="text-sm text-gray-600">
-            총 {dayAppointments.length}건의 예약
-          </p>
-        </div>
-        <button
-          onClick={onAddReservation}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-        >
-          + 예약 추가
-        </button>
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold text-gray-900">
+          {format(selectedDate, 'yyyy년 MM월 dd일')} 예약
+        </h2>
+        <p className="text-sm text-gray-600">
+          총 {dayAppointments.length}건의 예약
+        </p>
       </div>
 
       <div className="space-y-3">

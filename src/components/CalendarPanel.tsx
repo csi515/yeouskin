@@ -60,9 +60,6 @@ const CalendarPanel: React.FC<CalendarPanelProps> = ({
     <div className="bg-white rounded-lg shadow p-6 h-full">
       <div className="mb-4">
         <h2 className="text-lg font-semibold text-gray-900 mb-2">예약 달력</h2>
-        <p className="text-sm text-gray-600">
-          날짜를 클릭하여 해당 날짜의 예약을 확인하세요
-        </p>
       </div>
       
       <div className="w-full">
