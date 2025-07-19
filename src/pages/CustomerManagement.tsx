@@ -186,7 +186,7 @@ const CustomerManagement: React.FC = () => {
     }
   };
 
-  const handleUpdateCustomer = async (id: string, updates: Partial<Customer>) => {
+  const handleUpdateCustomer = async (id: string, updates: Partial<Customer>, appointments?: Appointment[], purchaseItems?: Array<{productId: string, quantity: number}>) => {
     try {
       // 클라이언트 필드명을 데이터베이스 필드명으로 변환
       const dbUpdates: any = {};
@@ -198,6 +198,7 @@ const CustomerManagement: React.FC = () => {
       if (updates.point !== undefined) dbUpdates.point = updates.point;
       if (updates.purchasedProducts) dbUpdates.purchased_products = updates.purchasedProducts;
 
+      // 고객 정보 업데이트
       const { data, error } = await supabase
         .from('customers')
         .update(dbUpdates)
@@ -205,6 +206,62 @@ const CustomerManagement: React.FC = () => {
         .select();
 
       if (error) throw error;
+
+      // 시술 이력 업데이트
+      if (appointments) {
+        // 기존 시술 이력 삭제
+        await supabase
+          .from('appointments')
+          .delete()
+          .eq('customer_id', id);
+
+        // 새로운 시술 이력 추가
+        if (appointments.length > 0) {
+          const appointmentData = appointments.map(appointment => ({
+            customer_id: id,
+            product_id: appointment.productId,
+            datetime: appointment.datetime,
+            memo: appointment.memo,
+            user_id: user?.id
+          }));
+
+          const { error: appointmentError } = await supabase
+            .from('appointments')
+            .insert(appointmentData);
+
+          if (appointmentError) {
+            console.error('시술 이력 저장 오류:', appointmentError);
+          }
+        }
+      }
+
+      // 구매 내역 업데이트
+      if (purchaseItems) {
+        // 기존 구매 내역 삭제
+        await supabase
+          .from('purchases')
+          .delete()
+          .eq('customer_id', id);
+
+        // 새로운 구매 내역 추가
+        if (purchaseItems.length > 0) {
+          const purchaseData = purchaseItems.map(item => ({
+            customer_id: id,
+            product_id: item.productId,
+            quantity: item.quantity,
+            purchase_date: new Date().toISOString(),
+            user_id: user?.id
+          }));
+
+          const { error: purchaseError } = await supabase
+            .from('purchases')
+            .insert(purchaseData);
+
+          if (purchaseError) {
+            console.error('구매 내역 저장 오류:', purchaseError);
+          }
+        }
+      }
       
       if (data && data.length > 0) {
         // 업데이트된 고객을 클라이언트 형식으로 변환
@@ -224,6 +281,11 @@ const CustomerManagement: React.FC = () => {
         setCustomers(prev => prev.map(customer => 
           customer.id === id ? updatedCustomer : customer
         ));
+
+        // 데이터 다시 로드하여 최신 상태 반영
+        await loadAppointments();
+        await loadPurchases();
+        
         setIsEditModalOpen(false);
         setSelectedCustomer(null);
       }
@@ -331,7 +393,7 @@ const CustomerManagement: React.FC = () => {
           appointments={appointments}
           isOpen={isEditModalOpen}
           onSubmit={(customer, appointments, purchaseItems) => {
-            handleUpdateCustomer(customer.id, customer);
+            handleUpdateCustomer(customer.id, customer, appointments, purchaseItems);
           }}
           onClose={() => {
             setIsEditModalOpen(false);
