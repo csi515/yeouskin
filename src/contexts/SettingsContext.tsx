@@ -5,7 +5,6 @@ interface Settings {
   businessPhone: string;
   businessAddress: string;
   businessHours: string;
-  defaultAppointmentDuration: number;
   appointmentTimeInterval: number;
   language: string;
 }
@@ -22,7 +21,6 @@ const defaultSettings: Settings = {
   businessPhone: '',
   businessAddress: '',
   businessHours: '',
-  defaultAppointmentDuration: 60,
   appointmentTimeInterval: 30,
   language: 'ko'
 };

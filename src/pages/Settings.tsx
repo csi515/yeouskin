@@ -94,37 +94,20 @@ const Settings: React.FC = () => {
         {/* 예약 기본 설정 */}
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">예약 기본 설정</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                기본 예약 시간 (분)
-              </label>
-              <select
-                value={settings.defaultAppointmentDuration}
-                onChange={(e) => handleInputChange('defaultAppointmentDuration', parseInt(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value={30}>30분</option>
-                <option value={60}>1시간</option>
-                <option value={90}>1시간 30분</option>
-                <option value={120}>2시간</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                예약 시간 단위 (분)
-              </label>
-              <select
-                value={settings.appointmentTimeInterval}
-                onChange={(e) => handleInputChange('appointmentTimeInterval', parseInt(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value={15}>15분</option>
-                <option value={30}>30분</option>
-                <option value={45}>45분</option>
-                <option value={60}>60분</option>
-              </select>
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              예약 시간 단위 (분)
+            </label>
+            <select
+              value={settings.appointmentTimeInterval}
+              onChange={(e) => handleInputChange('appointmentTimeInterval', parseInt(e.target.value))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value={15}>15분</option>
+              <option value={30}>30분</option>
+              <option value={45}>45분</option>
+              <option value={60}>60분</option>
+            </select>
           </div>
         </div>
 
