@@ -64,7 +64,7 @@
   "author": "CRM Team",
   "license": "MIT",
   "engines": {
-    "node": ">=16.0.0",
+    "node": "18.x",
     "npm": ">=8.0.0"
   }
 }
