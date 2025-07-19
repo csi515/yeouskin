@@ -52,9 +52,21 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
     }
   }, [user]);
 
+  // user가 변경될 때마다 설정 초기화
+  useEffect(() => {
+    if (!user) {
+      setSettings(defaultSettings);
+    }
+  }, [user]);
+
   const loadSettings = async () => {
     try {
-      if (!user) return;
+      if (!user) {
+        console.log('사용자가 없어서 설정 로드를 건너뜁니다.');
+        return;
+      }
+
+      console.log('설정 로드 시작 - 사용자 ID:', user.id);
 
       const { data, error } = await supabase
         .from('settings')
@@ -62,19 +74,24 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         .eq('user_id', user.id)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('설정 로드 실패:', error);
+      if (error) {
+        if (error.code === 'PGRST116') {
+          console.log('사용자 설정이 없습니다. 기본 설정을 사용합니다.');
+        } else {
+          console.error('설정 로드 실패:', error);
+        }
         return;
       }
 
       if (data) {
+        console.log('설정 데이터 로드됨:', data);
         setSettings(prev => ({
           ...prev,
           businessName: data.business_name || prev.businessName,
           businessPhone: data.business_phone || prev.businessPhone,
           businessAddress: data.business_address || prev.businessAddress,
           businessHours: data.business_hours || prev.businessHours,
-          appointmentTimeInterval: data.appointment_time_interval || 30, // 기본값 30분
+          appointmentTimeInterval: data.appointment_time_interval || 30,
           language: data.language || prev.language
         }));
       }
@@ -93,6 +110,9 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
       if (!user) {
         throw new Error('사용자 인증이 필요합니다.');
       }
+
+      console.log('설정 저장 시작 - 사용자 ID:', user.id);
+      console.log('저장할 설정:', settings);
 
       // 먼저 appointment_time_interval 컬럼이 있는지 확인
       const { data: columnCheck } = await supabase
@@ -115,6 +135,8 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         settingsData.appointment_time_interval = settings.appointmentTimeInterval;
       }
 
+      console.log('Supabase에 저장할 데이터:', settingsData);
+
       const { error } = await supabase
         .from('settings')
         .upsert(settingsData);
@@ -123,6 +145,10 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         console.error('설정 저장 실패:', error);
         throw error;
       }
+
+      console.log('설정 저장 성공');
+      // 저장 후 설정 다시 로드
+      await loadSettings();
     } catch (error) {
       console.error('설정 저장 실패:', error);
       throw error;
