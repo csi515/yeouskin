@@ -28,10 +28,19 @@ const Settings: React.FC = () => {
       </div>
 
       {message && (
-        <div className={`mb-6 p-4 rounded-lg ${
-          message.includes('성공') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+        <div className={`mb-6 p-4 rounded-lg border ${
+          message.includes('성공') 
+            ? 'bg-green-50 border-green-200 text-green-800' 
+            : 'bg-red-50 border-red-200 text-red-800'
         }`}>
-          {message}
+          <div className="flex items-center">
+            <div className={`mr-3 text-lg ${
+              message.includes('성공') ? 'text-green-600' : 'text-red-600'
+            }`}>
+              {message.includes('성공') ? '✅' : '❌'}
+            </div>
+            <div className="font-medium">{message}</div>
+          </div>
         </div>
       )}
 
@@ -132,7 +141,7 @@ const Settings: React.FC = () => {
         {/* 저장 버튼 */}
         <div className="flex justify-end">
           <button
-            onClick={saveSettings}
+            onClick={handleSave}
             disabled={isLoading}
             className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
