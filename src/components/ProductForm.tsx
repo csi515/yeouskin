@@ -190,7 +190,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
               type="submit"
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
-              {product ? '수정' : '추가'}
+              {product ? '저장' : '추가'}
             </button>
           </div>
         </form>
