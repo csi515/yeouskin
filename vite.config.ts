@@ -41,6 +41,7 @@ export default defineConfig(({ command, mode }) => ({
       },
     },
     chunkSizeWarningLimit: 1000,
+    copyPublicDir: true, // public 폴더의 .nojekyll 파일이 복사되도록 보장
   },
   define: {
     global: 'globalThis',
