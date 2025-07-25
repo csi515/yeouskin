@@ -3,6 +3,16 @@ import { supabaseClient } from './supabaseClient';
 // 안전한 Supabase 클라이언트 내보내기
 export const supabase = supabaseClient;
 
+// Supabase 클라이언트 초기화 상태 로깅
+if (typeof window !== 'undefined') {
+  console.log('Supabase 클라이언트 상태:', {
+    supabaseExists: !!supabase,
+    url: import.meta.env.VITE_SUPABASE_URL,
+    hasAnonKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
+    env: import.meta.env.MODE
+  });
+}
+
 // 타입 정의
 export interface SupabaseCustomer {
   id: string;
