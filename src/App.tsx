@@ -1,5 +1,5 @@
 import React, { Suspense, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -84,7 +84,7 @@ function App() {
     <ErrorBoundary fallback={<ErrorFallback />}>
       <AuthProvider>
         <SettingsProvider>
-          <Router>
+          <Router basename={process.env.PUBLIC_URL}>
             <RoutingHandler />
             <Routes>
             {/* 공개 라우트 */}

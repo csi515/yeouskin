@@ -2,9 +2,9 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
-export default defineConfig({
+export default defineConfig(({ command, mode }) => ({
   plugins: [react()],
-  base: '/',
+  base: mode === 'production' ? '/yeouskin/' : '/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -52,4 +52,4 @@ export default defineConfig({
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom', '@supabase/supabase-js'],
   },
-}); 
+})); 
