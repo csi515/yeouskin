@@ -31,8 +31,7 @@ export default defineConfig(({ command, mode }) => ({
         chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]',
-        format: 'iife', // GitHub Pages 호환을 위해 IIFE 형식 사용
-        name: 'CRMApp', // IIFE를 위한 글로벌 변수명
+        format: 'es', // ES 모듈 형식으로 복원
       },
     },
     terserOptions: {
