@@ -1,32 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabaseClient } from './supabaseClient';
 
-// Supabase 설정 (Vite 환경변수 방식)
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://wysihrzbnxhfnymtnvzj.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-// 환경변수 검증
-if (!supabaseAnonKey) {
-  console.error('VITE_SUPABASE_ANON_KEY 환경변수가 설정되지 않았습니다.');
-  throw new Error('Supabase anon key가 누락되었습니다. VITE_SUPABASE_ANON_KEY 환경변수를 확인하세요.');
-}
-
-// 싱글톤 패턴으로 Supabase 클라이언트 생성
-let supabaseInstance: any = null;
-
-const createSupabaseClient = () => {
-  if (!supabaseInstance) {
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true
-      }
-    });
-  }
-  return supabaseInstance;
-};
-
-export const supabase = createSupabaseClient();
+// 안전한 Supabase 클라이언트 내보내기
+export const supabase = supabaseClient;
 
 // 타입 정의
 export interface SupabaseCustomer {
@@ -79,6 +54,8 @@ export interface SupabaseFinance {
 export const customerApi = {
   // 모든 고객 조회
   async getAll() {
+    if (!supabase) throw new Error('Supabase 클라이언트가 초기화되지 않았습니다.');
+    
     const { data, error } = await supabase
       .from('customers')
       .select('*')
@@ -90,6 +67,8 @@ export const customerApi = {
 
   // 고객 추가
   async create(customer: Omit<SupabaseCustomer, 'id' | 'created_at' | 'updated_at'>) {
+    if (!supabase) throw new Error('Supabase 클라이언트가 초기화되지 않았습니다.');
+    
     const { data, error } = await supabase
       .from('customers')
       .insert([customer])

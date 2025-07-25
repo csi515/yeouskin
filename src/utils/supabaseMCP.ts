@@ -23,7 +23,18 @@ export class SupabaseMCP {
       throw new Error('Supabase 환경변수가 누락되었습니다.');
     }
 
-    this.supabase = createClient(supabaseUrl, supabaseAnonKey);
+    this.supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false,
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined
+      },
+      global: {
+        headers: {},
+        fetch: typeof window !== 'undefined' ? window.fetch.bind(window) : undefined
+      }
+    });
   }
 
   // 연결 테스트
