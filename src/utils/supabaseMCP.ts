@@ -16,8 +16,9 @@ export class SupabaseMCP {
   private isConnected: boolean = false;
 
   constructor() {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+    // GitHub Pages용 직접 설정
+    const supabaseUrl = 'https://wysihrzbnxhfnymtnvzj.supabase.co';
+    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5c2locnpibnhoZm55bXRudnpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTI3MjUsImV4cCI6MjA2NjA4ODcyNX0.u4UNIJikLf529VE3TSSTBzngOQ_H6OHKaUeEwYa41fY';
 
     if (!supabaseUrl || !supabaseAnonKey) {
       throw new Error('Supabase 환경변수가 누락되었습니다.');
