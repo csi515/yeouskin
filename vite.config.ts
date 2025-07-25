@@ -31,7 +31,7 @@ export default defineConfig(({ command, mode }) => ({
         chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]',
-        format: 'es', // ES 모듈 형식으로 복원
+        format: 'iife', // IIFE 형식으로 변경하여 MIME type 문제 해결
       },
     },
     terserOptions: {
