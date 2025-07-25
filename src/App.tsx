@@ -99,7 +99,7 @@ function App() {
       <SafeWrapper>
         <AuthProvider>
           <SettingsProvider>
-            <Router basename={process.env.PUBLIC_URL}>
+            <Router basename={import.meta.env.MODE === 'production' ? '/yeouskin' : ''}>
               <RoutingHandler />
               <Routes>
                 {/* 공개 라우트 */}
