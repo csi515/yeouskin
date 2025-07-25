@@ -25,7 +25,7 @@ export default defineConfig(({ command, mode }) => ({
     outDir: 'dist',
     sourcemap: false,
     minify: 'terser',
-    target: 'esnext',
+    target: 'es2015', // GitHub Pages 호환성을 위해 ES2015로 변경
     rollupOptions: {
       output: {
         manualChunks: {
@@ -36,6 +36,7 @@ export default defineConfig(({ command, mode }) => ({
         chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]',
+        format: 'es', // ES 모듈 형식 명시
       },
     },
     terserOptions: {
