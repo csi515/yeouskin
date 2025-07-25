@@ -28,15 +28,11 @@ export default defineConfig(({ command, mode }) => ({
     target: 'es2015', // GitHub Pages 호환성을 위해 ES2015로 변경
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          router: ['react-router-dom'],
-          supabase: ['@supabase/supabase-js'],
-        },
         chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]',
-        format: 'es', // ES 모듈 형식 명시
+        format: 'iife', // GitHub Pages 호환을 위해 IIFE 형식 사용
+        name: 'CRMApp', // IIFE를 위한 글로벌 변수명
       },
     },
     terserOptions: {
