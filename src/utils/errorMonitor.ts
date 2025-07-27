@@ -20,12 +20,14 @@ class ErrorMonitor {
   private init() {
     if (typeof window === 'undefined') return;
 
-    // 콘솔 오류 감지
-    const originalConsoleError = console.error;
-    console.error = (...args) => {
-      this.logError('console', 'Console Error', args.join(' '));
-      originalConsoleError.apply(console, args);
-    };
+    // 콘솔 오류 감지 (개발 모드에서만)
+    if (import.meta.env.DEV) {
+      const originalConsoleError = console.error;
+      console.error = (...args) => {
+        this.logError('console', 'Console Error', args.join(' '));
+        originalConsoleError.apply(console, args);
+      };
+    }
 
     // 전역 오류 이벤트 감지
     window.addEventListener('error', (event) => {

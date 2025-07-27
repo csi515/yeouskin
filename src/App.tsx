@@ -1,5 +1,5 @@
 import React, { Suspense, useEffect } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, useNavigate, createBrowserRouter, RouterProvider } from 'react-router-dom';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -101,7 +101,10 @@ function App() {
       <SafeWrapper>
         <AuthProvider>
           <SettingsProvider>
-            <Router basename={import.meta.env.MODE === 'production' ? '/yeouskin' : ''}>
+            <Router 
+              basename={import.meta.env.MODE === 'production' ? '/yeouskin' : ''}
+              future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+            >
               <RoutingHandler />
               <Routes>
                 {/* 공개 라우트 */}

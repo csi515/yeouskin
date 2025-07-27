@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '../utils/supabase';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
+import { supabase } from '../utils/supabase';
 
 interface Settings {
   businessName: string;
@@ -19,10 +19,10 @@ interface SettingsContextType {
 }
 
 const defaultSettings: Settings = {
-  businessName: '여우스킨',
-  businessPhone: '',
-  businessAddress: '',
-  businessHours: '',
+  businessName: '에스테틱 샵',
+  businessPhone: '02-1234-5678',
+  businessAddress: '서울시 강남구 테헤란로 123',
+  businessHours: '09:00-18:00',
   appointmentTimeInterval: 30,
   language: 'ko'
 };
@@ -31,7 +31,7 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 
 export const useSettings = () => {
   const context = useContext(SettingsContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useSettings must be used within a SettingsProvider');
   }
   return context;
@@ -42,9 +42,9 @@ interface SettingsProviderProps {
 }
 
 export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) => {
+  const { user } = useAuth();
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [isLoading, setIsLoading] = useState(false);
-  const { user } = useAuth();
 
   useEffect(() => {
     if (user) {
@@ -52,31 +52,23 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
     }
   }, [user]);
 
-  // user가 변경될 때마다 설정 초기화
-  useEffect(() => {
-    if (!user) {
-      setSettings(defaultSettings);
-    }
-  }, [user]);
-
   const loadSettings = async () => {
     try {
       if (!user) {
-        console.log('사용자가 없어서 설정 로드를 건너뜁니다.');
         return;
       }
 
-      console.log('설정 로드 시작 - 사용자 ID:', user.id);
-
+      // 406 오류 방지를 위해 더 안전한 쿼리 사용
       const { data, error } = await supabase
         .from('settings')
-        .select('*')
+        .select('business_name, business_phone, business_address, business_hours, language, appointment_time_interval')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle(); // single() 대신 maybeSingle() 사용
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          console.log('사용자 설정이 없습니다. 기본 설정을 사용합니다.');
+        // 406 오류는 무시하고 기본 설정 사용
+        if (error.code === 'PGRST116' || error.code === '406') {
+          console.log('사용자 설정이 없어 기본 설정을 사용합니다.');
         } else {
           console.error('설정 로드 실패:', error);
         }
@@ -84,7 +76,6 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
       }
 
       if (data) {
-        console.log('설정 데이터 로드됨:', data);
         setSettings(prev => ({
           ...prev,
           businessName: data.business_name || prev.businessName,
@@ -96,7 +87,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         }));
       }
     } catch (error) {
-      console.error('설정 로드 실패:', error);
+      console.error('설정 로드 중 오류 발생:', error);
     }
   };
 
@@ -111,77 +102,31 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         throw new Error('사용자 인증이 필요합니다.');
       }
 
-      console.log('설정 저장 시작 - 사용자 ID:', user.id);
-      console.log('저장할 설정:', settings);
-
-      // 먼저 기존 설정이 있는지 확인
-      const { data: existingSettings, error: checkError } = await supabase
-        .from('settings')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (checkError && checkError.code !== 'PGRST116') {
-        console.error('기존 설정 확인 실패:', checkError);
-        throw checkError;
-      }
-
-      const settingsData: any = {
+      const settingsData = {
+        user_id: user.id,
         business_name: settings.businessName,
         business_phone: settings.businessPhone,
         business_address: settings.businessAddress,
         business_hours: settings.businessHours,
         language: settings.language,
+        appointment_time_interval: settings.appointmentTimeInterval,
         updated_at: new Date().toISOString()
       };
 
-      // appointment_time_interval 컬럼이 있는지 확인하고 추가
-      try {
-        const { data: columnCheck } = await supabase
-          .from('settings')
-          .select('appointment_time_interval')
-          .limit(1);
-        
-        if (columnCheck !== null) {
-          settingsData.appointment_time_interval = settings.appointmentTimeInterval;
-        }
-      } catch (error) {
-        console.log('appointment_time_interval 컬럼이 없습니다.');
-      }
-
-      console.log('Supabase에 저장할 데이터:', settingsData);
-
-      let error;
-      if (existingSettings) {
-        // 기존 설정이 있으면 업데이트
-        console.log('기존 설정 업데이트 - ID:', existingSettings.id);
-        const { error: updateError } = await supabase
-          .from('settings')
-          .update(settingsData)
-          .eq('id', existingSettings.id);
-        error = updateError;
-      } else {
-        // 기존 설정이 없으면 새로 생성
-        console.log('새 설정 생성');
-        const { error: insertError } = await supabase
-          .from('settings')
-          .insert([{
-            user_id: user.id,
-            ...settingsData
-          }]);
-        error = insertError;
-      }
+      // UPSERT 방식으로 저장 (INSERT 또는 UPDATE)
+      const { error } = await supabase
+        .from('settings')
+        .upsert(settingsData, {
+          onConflict: 'user_id'
+        });
 
       if (error) {
         console.error('설정 저장 실패:', error);
         throw error;
       }
 
-      console.log('설정 저장 성공');
-      // 저장 후 설정 다시 로드
-      await loadSettings();
     } catch (error) {
-      console.error('설정 저장 실패:', error);
+      console.error('설정 저장 중 오류 발생:', error);
       throw error;
     } finally {
       setIsLoading(false);

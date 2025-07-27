@@ -12,11 +12,14 @@ export const createSafeSupabaseClient = () => {
     return null;
   }
 
-  console.log('Supabase 연결 정보 확인:', {
-    url: SUPABASE_URL,
-    hasAnonKey: !!SUPABASE_ANON_KEY,
-    status: 'GitHub Pages 배포용 직접 설정됨'
-  });
+  // 개발 모드에서만 로그 출력
+  if (import.meta.env.DEV) {
+    console.log('Supabase 연결 정보 확인:', {
+      url: SUPABASE_URL,
+      hasAnonKey: !!SUPABASE_ANON_KEY,
+      status: 'GitHub Pages 배포용 직접 설정됨'
+    });
+  }
 
   if (!SUPABASE_ANON_KEY) {
     console.error('Supabase Anon Key가 설정되지 않았습니다.');
@@ -37,7 +40,9 @@ export const createSafeSupabaseClient = () => {
       }
     });
     
-    console.log('Supabase 클라이언트 생성 성공');
+    if (import.meta.env.DEV) {
+      console.log('Supabase 클라이언트 생성 성공');
+    }
     return client;
   } catch (error) {
     console.error('Supabase 클라이언트 생성 실패:', error);

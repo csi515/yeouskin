@@ -69,7 +69,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // 인증 상태 변경 리스너
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: string, session: any) => {
-        console.log('Auth state changed:', event, session);
+        // 개발 모드에서만 로그 출력
+        if (import.meta.env.DEV) {
+          console.log('Auth state changed:', event, session?.user?.email);
+        }
 
         if (event === 'SIGNED_IN' && session?.user) {
           const user: User = {
