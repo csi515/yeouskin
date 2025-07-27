@@ -2,6 +2,8 @@ import { supabaseClient } from './supabaseClient';
 
 // 안전한 Supabase 클라이언트 내보내기
 export const supabase = supabaseClient;
+if (!supabase) {
+  console.error('x supabase 인스턴스 null');}
 
 // Supabase 클라이언트 초기화 상태 로깅 (개발 모드에서만)
 if (typeof window !== 'undefined' && import.meta.env.DEV) {
@@ -64,7 +66,7 @@ export interface SupabaseFinance {
 export const customerApi = {
   // 모든 고객 조회
   async getAll() {
-    if (!supabase) throw new Error('Supabase 클라이언트가 초기화되지 않았습니다.');
+    if (!supabase) throw new Error('Supabase 클라이언트가 초기화되지 않았습니다!!');
     
     const { data, error } = await supabase
       .from('customers')
