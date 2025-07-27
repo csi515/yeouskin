@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import SafeWrapper from './components/SafeWrapper';
+import ErrorMonitor from './components/ErrorMonitor';
 import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
@@ -12,6 +13,7 @@ import ProductManagement from './pages/ProductManagement';
 import AppointmentManagement from './pages/AppointmentManagement';
 import FinanceManagement from './pages/FinanceManagement';
 import Settings from './pages/Settings';
+import Debug from './pages/Debug';
 import NotFound from './pages/NotFound';
 import { AuthProvider } from './contexts/AuthContext';
 import { SettingsProvider } from './contexts/SettingsContext';
@@ -156,9 +158,17 @@ function App() {
                     </Layout>
                   </ProtectedRoute>
                 } />
+                <Route path="/debug" element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Debug />
+                    </Layout>
+                  </ProtectedRoute>
+                } />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Router>
+            <ErrorMonitor />
           </SettingsProvider>
         </AuthProvider>
       </SafeWrapper>

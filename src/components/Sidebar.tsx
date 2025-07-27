@@ -20,6 +20,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
     { path: '/products', icon: '🛍️', label: '상품 관리' },
     { path: '/finance', icon: '💰', label: '재무 관리' },
     { path: '/settings', icon: '⚙️', label: '설정' },
+    { path: '/debug', icon: '🔧', label: '디버깅' },
   ];
 
   const handleLogout = async () => {
