@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { supabase } from '../utils/supabase';
-import { getSettingsColumns, checkColumnExists } from '../utils/tableSchema';
+import { getSettingsColumns, checkColumnExists, checkTableExists } from '../utils/tableSchema';
 
 interface Settings {
   businessName: string;
@@ -59,41 +59,54 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         return;
       }
 
-      // 안전한 컬럼 목록 가져오기
-      const selectColumns = await getSettingsColumns();
-      
-      // appointment_time_interval 컬럼 존재 여부 확인
-      const hasAppointmentInterval = await checkColumnExists('settings', 'appointment_time_interval');
-
+      // 간단한 쿼리로 테이블 존재 여부 확인
       const { data, error } = await supabase
         .from('settings')
-        .select(selectColumns)
+        .select('id')
         .eq('user_id', user.id)
-        .maybeSingle();
+        .limit(1);
 
+      // 테이블이 없거나 오류가 발생하면 기본 설정 사용
       if (error) {
-        // 406 오류는 무시하고 기본 설정 사용
-        if (error.code === 'PGRST116' || error.code === '406') {
+        if (error.code === 'PGRST116') {
           console.log('사용자 설정이 없어 기본 설정을 사용합니다.');
         } else {
-          console.error('설정 로드 실패:', error);
+          console.log('settings 테이블에 접근할 수 없어 기본 설정을 사용합니다.');
         }
         return;
       }
 
-      if (data && typeof data === 'object') {
-        setSettings(prev => ({
-          ...prev,
-          businessName: (data as any).business_name || prev.businessName,
-          businessPhone: (data as any).business_phone || prev.businessPhone,
-          businessAddress: (data as any).business_address || prev.businessAddress,
-          businessHours: (data as any).business_hours || prev.businessHours,
-          appointmentTimeInterval: hasAppointmentInterval ? ((data as any).appointment_time_interval || 30) : 30,
-          language: (data as any).language || prev.language
-        }));
+      // 설정이 있으면 상세 정보 로드
+      if (data && data.length > 0) {
+        try {
+          const { data: settingsData, error: settingsError } = await supabase
+            .from('settings')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+
+          if (settingsError) {
+            console.log('설정 상세 로드 실패, 기본 설정 사용:', settingsError.message);
+            return;
+          }
+
+          if (settingsData) {
+            setSettings(prev => ({
+              ...prev,
+              businessName: settingsData.business_name || prev.businessName,
+              businessPhone: settingsData.business_phone || prev.businessPhone,
+              businessAddress: settingsData.business_address || prev.businessAddress,
+              businessHours: settingsData.business_hours || prev.businessHours,
+              appointmentTimeInterval: settingsData.appointment_time_interval || 30,
+              language: settingsData.language || prev.language
+            }));
+          }
+        } catch (detailError) {
+          console.log('설정 상세 로드 중 오류, 기본 설정 사용:', detailError);
+        }
       }
     } catch (error) {
-      console.error('설정 로드 중 오류 발생:', error);
+      console.log('설정 로드 중 오류, 기본 설정 사용:', error);
     }
   };
 
@@ -108,23 +121,16 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         throw new Error('사용자 인증이 필요합니다.');
       }
 
-      // appointment_time_interval 컬럼 존재 여부 확인
-      const hasAppointmentInterval = await checkColumnExists('settings', 'appointment_time_interval');
-
-      const settingsData: any = {
+      const settingsData = {
         user_id: user.id,
         business_name: settings.businessName,
         business_phone: settings.businessPhone,
         business_address: settings.businessAddress,
         business_hours: settings.businessHours,
         language: settings.language,
+        appointment_time_interval: settings.appointmentTimeInterval,
         updated_at: new Date().toISOString()
       };
-
-      // 컬럼이 존재할 때만 추가
-      if (hasAppointmentInterval) {
-        settingsData.appointment_time_interval = settings.appointmentTimeInterval;
-      }
 
       // UPSERT 방식으로 저장 (INSERT 또는 UPDATE)
       const { error } = await supabase

@@ -3,9 +3,30 @@ import { supabase } from './supabase';
 // 테이블 스키마 정보를 캐시
 const schemaCache = new Map<string, Set<string>>();
 
+// 테이블 존재 여부 확인
+export const checkTableExists = async (tableName: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from(tableName)
+      .select('*')
+      .limit(0);
+    
+    return !error;
+  } catch {
+    return false;
+  }
+};
+
 // 컬럼 존재 여부를 안전하게 확인하는 함수
 export const checkColumnExists = async (tableName: string, columnName: string): Promise<boolean> => {
   try {
+    // 먼저 테이블이 존재하는지 확인
+    const tableExists = await checkTableExists(tableName);
+    if (!tableExists) {
+      console.warn(`테이블 ${tableName}이(가) 존재하지 않습니다.`);
+      return false;
+    }
+
     // 캐시된 스키마 정보 확인
     const cacheKey = `${tableName}_columns`;
     if (schemaCache.has(cacheKey)) {
@@ -48,6 +69,13 @@ export const createSafeSelectQuery = async (
 ): Promise<string> => {
   const safeColumns: string[] = [];
   
+  // 테이블 존재 여부 확인
+  const tableExists = await checkTableExists(tableName);
+  if (!tableExists) {
+    console.warn(`테이블 ${tableName}이(가) 존재하지 않습니다. 빈 쿼리를 반환합니다.`);
+    return '';
+  }
+  
   // 필수 컬럼들 추가
   for (const column of requiredColumns) {
     if (await checkColumnExists(tableName, column)) {
@@ -73,6 +101,26 @@ export const getSettingsColumns = async (): Promise<string> => {
   const optionalColumns = ['appointment_time_interval'];
   
   return await createSafeSelectQuery('settings', requiredColumns, optionalColumns);
+};
+
+// settings 테이블 생성 함수
+export const createSettingsTable = async (): Promise<boolean> => {
+  try {
+    // RPC를 통해 테이블 생성 (Supabase에서는 직접 테이블 생성이 제한적)
+    const { error } = await supabase.rpc('create_settings_table_if_not_exists');
+    
+    if (error) {
+      console.error('settings 테이블 생성 실패:', error);
+      return false;
+    }
+    
+    // 캐시 초기화
+    clearTableSchemaCache('settings');
+    return true;
+  } catch (error) {
+    console.error('settings 테이블 생성 중 오류:', error);
+    return false;
+  }
 };
 
 // 스키마 캐시 초기화
