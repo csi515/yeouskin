@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import errorMonitor from '../utils/errorMonitor';
 import ErrorTestPanel from '../components/ErrorTestPanel';
+import DatabaseStatus from '../components/DatabaseStatus';
 
 const Debug: React.FC = () => {
   const [errors, setErrors] = useState<any[]>([]);
@@ -72,6 +73,9 @@ const Debug: React.FC = () => {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">🔧 디버깅 도구</h1>
         <p className="text-gray-600">네트워크 오류 및 콘솔 오류를 모니터링합니다.</p>
       </div>
+
+      {/* 데이터베이스 상태 확인 */}
+      <DatabaseStatus />
 
       {/* 오류 테스트 패널 */}
       <ErrorTestPanel />
