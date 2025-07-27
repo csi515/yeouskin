@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { supabase } from '../utils/supabase';
+import { getSettingsColumns, checkColumnExists } from '../utils/tableSchema';
 
 interface Settings {
   businessName: string;
@@ -58,12 +59,17 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         return;
       }
 
-      // 406 오류 방지를 위해 더 안전한 쿼리 사용
+      // 안전한 컬럼 목록 가져오기
+      const selectColumns = await getSettingsColumns();
+      
+      // appointment_time_interval 컬럼 존재 여부 확인
+      const hasAppointmentInterval = await checkColumnExists('settings', 'appointment_time_interval');
+
       const { data, error } = await supabase
         .from('settings')
-        .select('business_name, business_phone, business_address, business_hours, language, appointment_time_interval')
+        .select(selectColumns)
         .eq('user_id', user.id)
-        .maybeSingle(); // single() 대신 maybeSingle() 사용
+        .maybeSingle();
 
       if (error) {
         // 406 오류는 무시하고 기본 설정 사용
@@ -75,15 +81,15 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         return;
       }
 
-      if (data) {
+      if (data && typeof data === 'object') {
         setSettings(prev => ({
           ...prev,
-          businessName: data.business_name || prev.businessName,
-          businessPhone: data.business_phone || prev.businessPhone,
-          businessAddress: data.business_address || prev.businessAddress,
-          businessHours: data.business_hours || prev.businessHours,
-          appointmentTimeInterval: data.appointment_time_interval || 30,
-          language: data.language || prev.language
+          businessName: (data as any).business_name || prev.businessName,
+          businessPhone: (data as any).business_phone || prev.businessPhone,
+          businessAddress: (data as any).business_address || prev.businessAddress,
+          businessHours: (data as any).business_hours || prev.businessHours,
+          appointmentTimeInterval: hasAppointmentInterval ? ((data as any).appointment_time_interval || 30) : 30,
+          language: (data as any).language || prev.language
         }));
       }
     } catch (error) {
@@ -102,16 +108,23 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         throw new Error('사용자 인증이 필요합니다.');
       }
 
-      const settingsData = {
+      // appointment_time_interval 컬럼 존재 여부 확인
+      const hasAppointmentInterval = await checkColumnExists('settings', 'appointment_time_interval');
+
+      const settingsData: any = {
         user_id: user.id,
         business_name: settings.businessName,
         business_phone: settings.businessPhone,
         business_address: settings.businessAddress,
         business_hours: settings.businessHours,
         language: settings.language,
-        appointment_time_interval: settings.appointmentTimeInterval,
         updated_at: new Date().toISOString()
       };
+
+      // 컬럼이 존재할 때만 추가
+      if (hasAppointmentInterval) {
+        settingsData.appointment_time_interval = settings.appointmentTimeInterval;
+      }
 
       // UPSERT 방식으로 저장 (INSERT 또는 UPDATE)
       const { error } = await supabase
