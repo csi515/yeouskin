@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-// GitHub Pages용 Supabase 연결 정보 (직접 명시)
-const SUPABASE_URL = 'https://wysihrzbnxhfnymtnvzj.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5c2locnpibnhoZm55bXRudnpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTI3MjUsImV4cCI6MjA2NjA4ODcyNX0.u4UNIJikLf529VE3TSSTBzngOQ_H6OHKaUeEwYa41fY';
+// GitHub Pages용 Supabase 연결 정보 (환경 변수 우선, fallback으로 하드코딩)
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://wysihrzbnxhfnymtnvzj.supabase.co';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5c2locnpibnhoZm55bXRudnpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTI3MjUsImV4cCI6MjA2NjA4ODcyNX0.u4UNIJikLf529VE3TSSTBzngOQ_H6OHKaUeEwYa41fY';
 
 // 안전한 Supabase 클라이언트 생성
 export const createSafeSupabaseClient = () => {
@@ -13,11 +13,13 @@ export const createSafeSupabaseClient = () => {
   }
 
   // 개발 모드에서만 로그 출력
-  if (import.meta.env.DEV) {
+  if (import.meta.env.DEV || import.meta.env.MODE === 'production') {
     console.log('Supabase 연결 정보 확인:', {
       url: SUPABASE_URL,
       hasAnonKey: !!SUPABASE_ANON_KEY,
-      status: 'GitHub Pages 배포용 직접 설정됨'
+      envMode: import.meta.env.MODE,
+      nodeEnv: import.meta.env.NODE_ENV,
+      status: 'GitHub Pages 배포용 설정됨'
     });
   }
 
@@ -35,8 +37,17 @@ export const createSafeSupabaseClient = () => {
         storage: window.localStorage
       },
       global: {
-        headers: {},
+        headers: {
+          'X-Client-Info': 'supabase-js/2.x',
+          'Content-Type': 'application/json'
+        },
         fetch: window.fetch.bind(window)
+      },
+      // CORS 및 보안 설정
+      realtime: {
+        params: {
+          eventsPerSecond: 10
+        }
       }
     });
     

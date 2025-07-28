@@ -63,19 +63,41 @@ const DatabaseStatus: React.FC = () => {
   };
 
   const runDetailedTests = async () => {
+    setIsLoading(true);
     const detailedResults: any[] = [];
-    
+
     try {
+      // 0. 기본 정보 수집
+      const basicInfo = {
+        userAgent: navigator.userAgent,
+        url: window.location.href,
+        protocol: window.location.protocol,
+        hostname: window.location.hostname,
+        timestamp: new Date().toISOString()
+      };
+      detailedResults.push({ test: '기본 정보', status: 'ℹ️', details: basicInfo });
+
       // 1. 환경변수 확인
       const envInfo = {
         mode: import.meta.env.MODE,
         hasSupabaseUrl: !!import.meta.env.VITE_SUPABASE_URL,
         hasSupabaseKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
-        nodeEnv: import.meta.env.NODE_ENV
+        nodeEnv: import.meta.env.NODE_ENV,
+        supabaseUrl: import.meta.env.VITE_SUPABASE_URL || 'fallback 사용됨',
+        supabaseKeyLength: import.meta.env.VITE_SUPABASE_ANON_KEY?.length || 0
       };
       detailedResults.push({ test: '환경변수 확인', status: '✅', details: envInfo });
 
-      // 2. 네트워크 연결 테스트
+      // 2. Supabase 클라이언트 상태 확인
+      const clientInfo = {
+        supabaseExists: !!supabase,
+        supabaseType: typeof supabase,
+        hasAuth: !!supabase?.auth,
+        hasFrom: !!supabase?.from
+      };
+      detailedResults.push({ test: 'Supabase 클라이언트', status: '✅', details: clientInfo });
+
+      // 3. 네트워크 연결 테스트 (CORS 확인)
       try {
         const response = await fetch('https://wysihrzbnxhfnymtnvzj.supabase.co/rest/v1/', {
           method: 'GET',
@@ -85,19 +107,23 @@ const DatabaseStatus: React.FC = () => {
           }
         });
         detailedResults.push({ 
-          test: '네트워크 연결', 
+          test: '네트워크 연결 (CORS)', 
           status: response.ok ? '✅ 성공' : '❌ 실패',
-          details: { status: response.status, statusText: response.statusText }
+          details: { 
+            status: response.status, 
+            statusText: response.statusText,
+            headers: Object.fromEntries(response.headers.entries())
+          }
         });
       } catch (error) {
         detailedResults.push({ 
-          test: '네트워크 연결', 
+          test: '네트워크 연결 (CORS)', 
           status: '❌ 실패',
           details: { error: error instanceof Error ? error.message : '알 수 없는 오류' }
         });
       }
 
-      // 3. 각 테이블 접근 테스트
+      // 4. 각 테이블 접근 테스트
       const tables = ['customers', 'products', 'appointments', 'finance'];
       for (const table of tables) {
         try {
@@ -105,7 +131,12 @@ const DatabaseStatus: React.FC = () => {
           detailedResults.push({ 
             test: `${table} 테이블 접근`, 
             status: error ? '❌ 실패' : '✅ 성공',
-            details: error ? { error: error.message } : { count: data?.length || 0 }
+            details: error ? { 
+              error: error.message,
+              code: error.code,
+              details: error.details,
+              hint: error.hint
+            } : { count: data?.length || 0 }
           });
         } catch (error) {
           detailedResults.push({ 
@@ -125,6 +156,7 @@ const DatabaseStatus: React.FC = () => {
     }
 
     setTestResults(detailedResults);
+    setIsLoading(false);
   };
 
   const getStatusColor = (isConnected: boolean) => {
