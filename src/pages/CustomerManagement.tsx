@@ -323,6 +323,10 @@ const CustomerManagement: React.FC = () => {
     }
   };
 
+  const handleEditClick = (customer: Customer) => {
+    setEditingCustomer(customer);
+  };
+
   if (loading) {
     return (
       <div className="p-6">
@@ -336,8 +340,18 @@ const CustomerManagement: React.FC = () => {
   if (error) {
     return (
       <div className="p-6">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          <strong>오류:</strong> {error}
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-red-600">⚠️</span>
+            <span className="font-medium text-red-800">오류 발생</span>
+          </div>
+          <p className="text-red-700 text-sm mb-3">{error}</p>
+          <button 
+            onClick={loadCustomers}
+            className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+          >
+            다시 시도
+          </button>
         </div>
       </div>
     );
@@ -346,10 +360,10 @@ const CustomerManagement: React.FC = () => {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">고객 관리</h1>
+        <h1 className="text-2xl font-bold text-gray-900">고객 관리</h1>
         <button
           onClick={() => setIsFormOpen(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
         >
           새 고객 추가
         </button>
@@ -365,7 +379,6 @@ const CustomerManagement: React.FC = () => {
 
       {isFormOpen && (
         <CustomerForm
-          isOpen={isFormOpen}
           onSubmit={handleAddCustomer}
           onClose={() => setIsFormOpen(false)}
         />

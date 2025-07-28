@@ -1,94 +1,50 @@
 import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../utils/supabase';
+import { getSupabase } from '../utils/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 const Login: React.FC = () => {
-  const [isLogin, setIsLogin] = useState(true);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    name: '',
-  });
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [resetEmail, setResetEmail] = useState('');
+  const [isResetMode, setIsResetMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  // 비밀번호 재설정 관련 상태
-  const [showResetForm, setShowResetForm] = useState(false);
-  const [resetEmail, setResetEmail] = useState('');
-  const [resetLoading, setResetLoading] = useState(false);
-  const [resetMessage, setResetMessage] = useState<string | null>(null);
-
-  const { signIn, signUp } = useAuth();
+  const [message, setMessage] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { signIn, resetPassword } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      if (isLogin) {
-        const { error } = await signIn(formData.email, formData.password);
-        if (error) {
-          setError(error);
-        } else {
-          navigate('/dashboard');
-        }
+      const result = await signIn(email, password);
+      if (result.error) {
+        setError(result.error);
       } else {
-        const { error } = await signUp(formData.email, formData.password, formData.name);
-        if (error) {
-          setError(error);
-        } else {
-          navigate('/dashboard');
-        }
+        navigate('/dashboard');
       }
-    } catch (err) {
-      setError('알 수 없는 오류가 발생했습니다.');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : '로그인 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const toggleMode = () => {
-    setIsLogin(!isLogin);
-    setError(null);
-    setFormData({
-      email: '',
-      password: '',
-      name: '',
-    });
-  };
-
-  // 비밀번호 재설정 토글
-  const toggleResetForm = () => {
-    setShowResetForm(!showResetForm);
-    setResetEmail('');
-    setResetMessage(null);
-    setError(null);
-  };
-
-  // 비밀번호 재설정 링크 전송
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!resetEmail.trim()) {
-      setResetMessage('이메일을 입력해주세요.');
-      return;
-    }
-
-    setResetLoading(true);
-    setResetMessage(null);
+    setLoading(true);
     setError(null);
+    setMessage(null);
 
     try {
+      const supabase = getSupabase();
+      if (!supabase) {
+        throw new Error('Supabase 클라이언트를 초기화할 수 없습니다.');
+      }
+
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
@@ -96,193 +52,150 @@ const Login: React.FC = () => {
       if (error) {
         setError(error.message);
       } else {
-        setResetMessage('비밀번호 재설정 링크가 전송되었습니다. 이메일을 확인해주세요.');
-        setResetEmail('');
-        setTimeout(() => {
-          setShowResetForm(false);
-          setResetMessage(null);
-        }, 3000);
+        setMessage('비밀번호 재설정 이메일이 발송되었습니다. 이메일을 확인해주세요.');
+        setIsResetMode(false);
       }
-    } catch (err) {
-      setError('비밀번호 재설정 링크 전송 중 오류가 발생했습니다.');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : '비밀번호 재설정 중 오류가 발생했습니다.');
     } finally {
-      setResetLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        {/* 로고 및 제목 */}
-        <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mb-4">
-            <span className="text-white text-2xl font-bold">💆</span>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            에스테틱 CRM
-          </h1>
-          <p className="text-gray-600">
-            {isLogin ? '계정에 로그인하세요' : '새 계정을 만드세요'}
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            {isResetMode ? '비밀번호 재설정' : '로그인'}
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            {isResetMode 
+              ? '이메일 주소를 입력하면 비밀번호 재설정 링크를 보내드립니다.'
+              : 'CRM 시스템에 로그인하세요'
+            }
           </p>
         </div>
 
-        {/* 폼 */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {!isLogin && (
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-red-600">⚠️</span>
+              <span className="font-medium text-red-800">오류</span>
+            </div>
+            <p className="text-red-700 text-sm">{error}</p>
+          </div>
+        )}
+
+        {message && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-green-600">✅</span>
+              <span className="font-medium text-green-800">성공</span>
+            </div>
+            <p className="text-green-700 text-sm">{message}</p>
+          </div>
+        )}
+
+        {isResetMode ? (
+          <form className="mt-8 space-y-6" onSubmit={handleResetPassword}>
+            <div>
+              <label htmlFor="reset-email" className="sr-only">
+                이메일 주소
+              </label>
+              <input
+                id="reset-email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="이메일 주소"
+              />
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                {loading ? '처리 중...' : '비밀번호 재설정 이메일 보내기'}
+              </button>
+            </div>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setIsResetMode(false)}
+                className="text-sm text-blue-600 hover:text-blue-500"
+              >
+                로그인으로 돌아가기
+              </button>
+            </div>
+          </form>
+        ) : (
+          <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+            <div className="rounded-md shadow-sm -space-y-px">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                  이름
+                <label htmlFor="email-address" className="sr-only">
+                  이메일 주소
                 </label>
                 <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  required={!isLogin}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                  placeholder="이름을 입력하세요"
+                  id="email-address"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  placeholder="이메일 주소"
                 />
               </div>
-            )}
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                이메일
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                placeholder="이메일을 입력하세요"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                비밀번호
-              </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                placeholder="비밀번호를 입력하세요"
-              />
-            </div>
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-red-600 text-sm">{error}</p>
+              <div>
+                <label htmlFor="password" className="sr-only">
+                  비밀번호
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  placeholder="비밀번호"
+                />
               </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 px-4 rounded-lg font-medium hover:from-purple-600 hover:to-pink-600 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  {isLogin ? '로그인 중...' : '회원가입 중...'}
-                </div>
-              ) : (
-                isLogin ? '로그인' : '회원가입'
-              )}
-            </button>
-          </form>
-
-          {/* 모드 전환 - 회원가입에서 로그인으로만 전환 가능 */}
-          {!isLogin && (
-            <div className="mt-6 text-center">
-              <button
-                type="button"
-                onClick={toggleMode}
-                className="text-purple-600 hover:text-purple-700 text-sm font-medium transition-colors"
-              >
-                이미 계정이 있으신가요? 로그인
-              </button>
             </div>
-          )}
 
-          {/* 비밀번호 재설정 */}
-          {isLogin && (
-            <div className="mt-4 text-center">
-              <button
-                type="button"
-                onClick={toggleResetForm}
-                className="text-gray-500 hover:text-gray-700 text-sm transition-colors underline"
-              >
-                비밀번호를 잊으셨나요?
-              </button>
-            </div>
-          )}
-
-          {/* 비밀번호 재설정 폼 */}
-          {isLogin && showResetForm && (
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <form onSubmit={handleResetPassword} className="space-y-4">
-                <div>
-                  <label htmlFor="reset-email" className="block text-sm font-medium text-gray-700 mb-2">
-                    이메일 주소
-                  </label>
-                  <input
-                    type="email"
-                    id="reset-email"
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
-                    required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                    placeholder="비밀번호 재설정을 받을 이메일을 입력하세요"
-                  />
-                </div>
-
-                {resetMessage && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <p className="text-green-600 text-sm">{resetMessage}</p>
-                  </div>
-                )}
-
+            <div className="flex items-center justify-between">
+              <div className="text-sm">
                 <button
-                  type="submit"
-                  disabled={resetLoading}
-                  className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 px-4 rounded-lg font-medium hover:from-blue-600 hover:to-purple-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  type="button"
+                  onClick={() => setIsResetMode(true)}
+                  className="font-medium text-blue-600 hover:text-blue-500"
                 >
-                  {resetLoading ? (
-                    <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                      전송 중...
-                    </div>
-                  ) : (
-                    '비밀번호 재설정 링크 보내기'
-                  )}
+                  비밀번호를 잊으셨나요?
                 </button>
-              </form>
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* 추가 정보 */}
-        <div className="mt-8 text-center">
-          <p className="text-gray-500 text-sm">
-            에스테틱 샵 전용 CRM 시스템
-          </p>
-          <p className="text-gray-400 text-xs mt-1">
-            고객 관리 • 예약 관리 • 재무 관리
-          </p>
-          <p className="text-gray-400 text-xs mt-2">
-            가입 문의: <a href="mailto:csi515@naver.com" className="text-purple-600 hover:text-purple-700 underline">csi515@naver.com</a>
-          </p>
-        </div>
+            <div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                {loading ? '로그인 중...' : '로그인'}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

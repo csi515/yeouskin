@@ -1,21 +1,33 @@
 import React, { useState, useEffect } from 'react';
+import { getSupabase } from '../utils/supabase';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../utils/supabase';
 
 const ResetPassword: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     // URL에서 토큰 확인
-    const hash = window.location.hash;
-    if (!hash.includes('access_token')) {
-      setError('유효하지 않은 링크입니다.');
+    const urlParams = new URLSearchParams(window.location.search);
+    const accessToken = urlParams.get('access_token');
+    const refreshToken = urlParams.get('refresh_token');
+
+    if (!accessToken || !refreshToken) {
+      setError('유효하지 않은 비밀번호 재설정 링크입니다.');
       return;
+    }
+
+    // 토큰을 세션에 저장
+    const supabase = getSupabase();
+    if (supabase) {
+      supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
     }
   }, []);
 
@@ -36,6 +48,11 @@ const ResetPassword: React.FC = () => {
     setError(null);
 
     try {
+      const supabase = getSupabase();
+      if (!supabase) {
+        throw new Error('Supabase 클라이언트를 초기화할 수 없습니다.');
+      }
+
       const { error } = await supabase.auth.updateUser({
         password: password
       });
@@ -43,125 +60,106 @@ const ResetPassword: React.FC = () => {
       if (error) {
         setError(error.message);
       } else {
-        setSuccess(true);
+        setMessage('비밀번호가 성공적으로 변경되었습니다. 로그인 페이지로 이동합니다.');
         setTimeout(() => {
           navigate('/login');
-        }, 3000);
+        }, 2000);
       }
-    } catch (err) {
-      setError('비밀번호 변경 중 오류가 발생했습니다.');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : '비밀번호 변경 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
   };
 
-  if (success) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
-          <div className="text-6xl mb-4">✅</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">비밀번호 변경 완료</h1>
-          <p className="text-gray-600 mb-6">
-            비밀번호가 성공적으로 변경되었습니다. 잠시 후 로그인 페이지로 이동합니다.
-          </p>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        {/* 로고 및 제목 */}
-        <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mb-4">
-            <span className="text-white text-2xl font-bold">🔐</span>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            비밀번호 재설정
-          </h1>
-          <p className="text-gray-600">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            새 비밀번호 설정
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
             새로운 비밀번호를 입력해주세요
           </p>
         </div>
 
-        {/* 폼 */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-red-600">⚠️</span>
+              <span className="font-medium text-red-800">오류</span>
+            </div>
+            <p className="text-red-700 text-sm">{error}</p>
+          </div>
+        )}
+
+        {message && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-green-600">✅</span>
+              <span className="font-medium text-green-800">성공</span>
+            </div>
+            <p className="text-green-700 text-sm">{message}</p>
+          </div>
+        )}
+
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="rounded-md shadow-sm -space-y-px">
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="sr-only">
                 새 비밀번호
               </label>
               <input
-                type="password"
                 id="password"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                placeholder="새 비밀번호를 입력하세요"
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="새 비밀번호"
               />
             </div>
-
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                새 비밀번호 확인
+              <label htmlFor="confirm-password" className="sr-only">
+                비밀번호 확인
               </label>
               <input
+                id="confirm-password"
+                name="confirm-password"
                 type="password"
-                id="confirmPassword"
+                autoComplete="new-password"
+                required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                placeholder="새 비밀번호를 다시 입력하세요"
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="비밀번호 확인"
               />
             </div>
+          </div>
 
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-red-600 text-sm">{error}</p>
-              </div>
-            )}
-
+          <div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 px-4 rounded-lg font-medium hover:from-purple-600 hover:to-pink-600 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
-              {loading ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  변경 중...
-                </div>
-              ) : (
-                '비밀번호 변경'
-              )}
+              {loading ? '처리 중...' : '비밀번호 변경'}
             </button>
-          </form>
+          </div>
 
-          {/* 로그인으로 돌아가기 */}
-          <div className="mt-6 text-center">
+          <div className="text-center">
             <button
               type="button"
               onClick={() => navigate('/login')}
-              className="text-purple-600 hover:text-purple-700 text-sm font-medium transition-colors"
+              className="text-sm text-blue-600 hover:text-blue-500"
             >
               로그인으로 돌아가기
             </button>
           </div>
-        </div>
-
-        {/* 추가 정보 */}
-        <div className="mt-8 text-center">
-          <p className="text-gray-500 text-sm">
-            에스테틱 샵 전용 CRM 시스템
-          </p>
-          <p className="text-gray-400 text-xs mt-1">
-            고객 관리 • 예약 관리 • 재무 관리
-          </p>
-        </div>
+        </form>
       </div>
     </div>
   );
