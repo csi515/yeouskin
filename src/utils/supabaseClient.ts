@@ -1,35 +1,45 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// GitHub Pages용 Supabase 연결 정보 (환경 변수 우선, fallback으로 하드코딩)
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://wysihrzbnxhfnymtnvzj.supabase.co';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5c2locnpibnhoZm55bXRudnpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTI3MjUsImV4cCI6MjA2NjA4ODcyNX0.u4UNIJikLf529VE3TSSTBzngOQ_H6OHKaUeEwYa41fY';
+// 환경 변수에서 Supabase 설정 가져오기
+const getSupabaseConfig = () => {
+  const url = import.meta.env.VITE_SUPABASE_URL;
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  
+  // Fallback 값들 (GitHub Pages 배포용)
+  const fallbackUrl = 'https://wysihrzbnxhfnymtnvzj.supabase.co';
+  const fallbackKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5c2locnpibnhoZm55bXRudnpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTI3MjUsImV4cCI6MjA2NjA4ODcyNX0.u4UNIJikLf529VE3TSSTBzngOQ_H6OHKaUeEwYa41fY';
+  
+  const finalUrl = url || fallbackUrl;
+  const finalKey = anonKey || fallbackKey;
+  
+  return {
+    url: finalUrl,
+    anonKey: finalKey,
+    isUsingFallback: !url || !anonKey
+  };
+};
 
-// 안전한 Supabase 클라이언트 생성
-export const createSafeSupabaseClient = () => {
-  // 브라우저 환경 확인
+// Supabase 클라이언트 생성 함수
+export const createSupabaseClient = (): SupabaseClient | null => {
+  // 서버 사이드 렌더링 환경 체크
   if (typeof window === 'undefined') {
-    console.log('서버 환경에서 Supabase 클라이언트 초기화 건너뜀');
+    console.warn('Supabase: 서버 환경에서 클라이언트 생성 건너뜀');
     return null;
   }
 
-  // 개발 모드에서만 로그 출력
-  if (import.meta.env.DEV || import.meta.env.MODE === 'production') {
-    console.log('Supabase 연결 정보 확인:', {
-      url: SUPABASE_URL,
-      hasAnonKey: !!SUPABASE_ANON_KEY,
-      envMode: import.meta.env.MODE,
-      nodeEnv: import.meta.env.NODE_ENV,
-      status: 'GitHub Pages 배포용 설정됨'
+  const config = getSupabaseConfig();
+  
+  // 설정 유효성 검사
+  if (!config.url || !config.anonKey) {
+    console.error('Supabase: URL 또는 API 키가 설정되지 않았습니다.', {
+      url: !!config.url,
+      hasKey: !!config.anonKey
     });
-  }
-
-  if (!SUPABASE_ANON_KEY) {
-    console.error('Supabase Anon Key가 설정되지 않았습니다.');
     return null;
   }
 
   try {
-    const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    const client = createClient(config.url, config.anonKey, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
@@ -38,22 +48,26 @@ export const createSafeSupabaseClient = () => {
       },
       global: {
         headers: {
-          'X-Client-Info': 'supabase-js/2.x',
+          'X-Client-Info': 'crm-esthetic-shop/1.0.0',
           'Content-Type': 'application/json'
-        },
-        fetch: window.fetch.bind(window)
+        }
       },
-      // CORS 및 보안 설정
       realtime: {
         params: {
           eventsPerSecond: 10
         }
       }
     });
-    
+
+    // 연결 테스트
     if (import.meta.env.DEV) {
-      console.log('Supabase 클라이언트 생성 성공');
+      console.log('Supabase 클라이언트 생성 성공:', {
+        url: config.url,
+        isUsingFallback: config.isUsingFallback,
+        mode: import.meta.env.MODE
+      });
     }
+
     return client;
   } catch (error) {
     console.error('Supabase 클라이언트 생성 실패:', error);
@@ -61,5 +75,21 @@ export const createSafeSupabaseClient = () => {
   }
 };
 
-// 단일 인스턴스 생성
-export const supabaseClient = createSafeSupabaseClient(); 
+// 전역 Supabase 클라이언트 인스턴스
+let supabaseInstance: SupabaseClient | null = null;
+
+// 안전한 Supabase 클라이언트 가져오기
+export const getSupabaseClient = (): SupabaseClient | null => {
+  if (!supabaseInstance) {
+    supabaseInstance = createSupabaseClient();
+  }
+  return supabaseInstance;
+};
+
+// 클라이언트 재초기화 (필요시)
+export const resetSupabaseClient = (): void => {
+  supabaseInstance = null;
+};
+
+// 기본 내보내기 (기존 코드 호환성)
+export const supabaseClient = getSupabaseClient(); 
