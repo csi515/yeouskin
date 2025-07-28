@@ -1,35 +1,48 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../utils/supabase';
-import CalendarPanel from '../components/CalendarPanel';
-import ReservationListPanel from '../components/ReservationListPanel';
-import AppointmentForm from '../components/AppointmentForm';
+import { getSupabase } from '../utils/supabase';
 import { Appointment, Customer, Product } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import AppointmentForm from '../components/AppointmentForm';
+import AppointmentList from '../components/AppointmentList';
+import Calendar from 'react-calendar';
+import 'react-calendar/dist/Calendar.css';
 
 const AppointmentManagement: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const { user } = useAuth();
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user) {
+      loadData();
+    }
+  }, [user]);
 
   const loadData = async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      // 모든 데이터를 병렬로 로드
+      const supabase = getSupabase();
+      if (!supabase) {
+        throw new Error('Supabase 클라이언트를 초기화할 수 없습니다.');
+      }
+
+      if (!user) {
+        throw new Error('사용자 인증이 필요합니다.');
+      }
+
+      // 모든 데이터를 병렬로 로드 (user_id 필터링 추가)
       const [appointmentsResult, customersResult, productsResult] = await Promise.all([
-        supabase.from('appointments').select('*, customers(name, phone), products(name, price)').order('datetime', { ascending: false }),
-        supabase.from('customers').select('*').order('name'),
-        supabase.from('products').select('*').order('name')
+        supabase.from('appointments').select('*, customers(name, phone), products(name, price)').eq('user_id', user.id).order('datetime', { ascending: false }),
+        supabase.from('customers').select('*').eq('user_id', user.id).order('name'),
+        supabase.from('products').select('*').eq('user_id', user.id).order('name')
       ]);
 
       if (appointmentsResult.error) throw appointmentsResult.error;
@@ -63,6 +76,11 @@ const AppointmentManagement: React.FC = () => {
     try {
       if (!user) {
         throw new Error('사용자 인증이 필요합니다.');
+      }
+
+      const supabase = getSupabase();
+      if (!supabase) {
+        throw new Error('Supabase 클라이언트를 초기화할 수 없습니다.');
       }
 
       // 클라이언트 필드명을 데이터베이스 필드명으로 변환
@@ -106,6 +124,11 @@ const AppointmentManagement: React.FC = () => {
 
   const handleUpdateAppointment = async (id: string, updates: Partial<Appointment>) => {
     try {
+      const supabase = getSupabase();
+      if (!supabase) {
+        throw new Error('Supabase 클라이언트를 초기화할 수 없습니다.');
+      }
+
       // 클라이언트 필드명을 데이터베이스 필드명으로 변환
       const dbUpdates: any = {};
       if (updates.customerId) dbUpdates.customer_id = updates.customerId;
@@ -123,7 +146,6 @@ const AppointmentManagement: React.FC = () => {
       if (error) throw error;
       
       if (data && data.length > 0) {
-        // 업데이트된 예약을 클라이언트 형식으로 변환
         const updatedAppointment = {
           id: data[0].id,
           customerId: data[0].customer_id,
@@ -135,20 +157,24 @@ const AppointmentManagement: React.FC = () => {
           updatedAt: data[0].updated_at
         };
         
-        setAppointments(prev => prev.map(appointment => 
-          appointment.id === id ? updatedAppointment : appointment
-        ));
-        setIsFormOpen(false);
+        setAppointments(prev => 
+          prev.map(app => app.id === id ? updatedAppointment : app)
+        );
         setEditingAppointment(null);
       }
     } catch (error) {
-      setError(error instanceof Error ? error.message : '예약 업데이트 실패');
-      console.error('예약 업데이트 오류:', error);
+      setError(error instanceof Error ? error.message : '예약 수정 실패');
+      console.error('예약 수정 오류:', error);
     }
   };
 
   const handleDeleteAppointment = async (id: string) => {
     try {
+      const supabase = getSupabase();
+      if (!supabase) {
+        throw new Error('Supabase 클라이언트를 초기화할 수 없습니다.');
+      }
+
       const { error } = await supabase
         .from('appointments')
         .delete()
@@ -156,7 +182,7 @@ const AppointmentManagement: React.FC = () => {
 
       if (error) throw error;
       
-      setAppointments(prev => prev.filter(appointment => appointment.id !== id));
+      setAppointments(prev => prev.filter(app => app.id !== id));
     } catch (error) {
       setError(error instanceof Error ? error.message : '예약 삭제 실패');
       console.error('예약 삭제 오류:', error);
@@ -206,24 +232,22 @@ const AppointmentManagement: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <CalendarPanel
-            appointments={appointments}
-            customers={customers}
-            products={products}
-            selectedDate={selectedDate}
-            onDateSelect={handleDateSelect}
+          <Calendar
+            onChange={handleDateSelect}
+            value={selectedDate || undefined}
+            className="w-full"
           />
         </div>
         
         <div className="lg:col-span-1">
-          <ReservationListPanel
+          <AppointmentList
             appointments={appointments}
             customers={customers}
             products={products}
-            selectedDate={selectedDate}
-            onAddReservation={() => setIsFormOpen(true)}
-            onEditReservation={handleEditClick}
-            onDeleteReservation={handleDeleteAppointment}
+            selectedDate={selectedDate || new Date()}
+            onAddAppointment={() => setIsFormOpen(true)}
+            onEditAppointment={handleEditClick}
+            onDeleteAppointment={handleDeleteAppointment}
           />
         </div>
       </div>
@@ -234,7 +258,7 @@ const AppointmentManagement: React.FC = () => {
           appointment={editingAppointment || undefined}
           customers={customers}
           products={products}
-          selectedDate={selectedDate}
+          selectedDate={selectedDate || new Date()}
           onSubmit={editingAppointment ? 
             (appointmentData) => handleUpdateAppointment(editingAppointment.id, appointmentData) : 
             handleAddAppointment

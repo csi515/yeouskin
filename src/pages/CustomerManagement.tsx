@@ -1,36 +1,50 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../utils/supabase';
-import CustomerTable from '../components/CustomerTable';
-import CustomerForm from '../components/CustomerForm';
-import EditCustomerModal from '../components/EditCustomerModal';
-import { Customer, Product, Purchase, Appointment } from '../types';
+import { getSupabase } from '../utils/supabase';
+import { Customer, Product, Appointment } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import CustomerForm from '../components/CustomerForm';
+import CustomerList from '../components/CustomerList';
+import CustomerDetail from '../components/CustomerDetail';
 
 const CustomerManagement: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [purchases, setPurchases] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const { user } = useAuth();
 
   useEffect(() => {
-    loadCustomers();
-    loadProducts();
-    loadPurchases();
-    loadAppointments();
-  }, []);
+    if (user) {
+      loadCustomers();
+      loadProducts();
+      loadPurchases();
+      loadAppointments();
+    }
+  }, [user]);
 
   const loadCustomers = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      const supabase = getSupabase();
+      if (!supabase) {
+        throw new Error('Supabase 클라이언트를 초기화할 수 없습니다.');
+      }
+
+      if (!user) {
+        throw new Error('사용자 인증이 필요합니다.');
+      }
+
       const { data, error } = await supabase
         .from('customers')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -60,9 +74,13 @@ const CustomerManagement: React.FC = () => {
 
   const loadProducts = async () => {
     try {
+      const supabase = getSupabase();
+      if (!supabase || !user) return;
+
       const { data, error } = await supabase
         .from('products')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -86,9 +104,13 @@ const CustomerManagement: React.FC = () => {
 
   const loadPurchases = async () => {
     try {
+      const supabase = getSupabase();
+      if (!supabase || !user) return;
+
       const { data, error } = await supabase
         .from('purchases')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -111,9 +133,13 @@ const CustomerManagement: React.FC = () => {
 
   const loadAppointments = async () => {
     try {
+      const supabase = getSupabase();
+      if (!supabase || !user) return;
+
       const { data, error } = await supabase
         .from('appointments')
         .select('*')
+        .eq('user_id', user.id)
         .order('datetime', { ascending: false });
 
       if (error) throw error;
@@ -124,6 +150,7 @@ const CustomerManagement: React.FC = () => {
         productId: appointment.product_id,
         datetime: appointment.datetime,
         memo: appointment.memo,
+        status: appointment.status,
         createdAt: appointment.created_at,
         updatedAt: appointment.updated_at
       }));
@@ -136,52 +163,50 @@ const CustomerManagement: React.FC = () => {
 
   const handleAddCustomer = async (customer: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
-      if (!user?.id) {
-        setError('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
-        return;
+      if (!user) {
+        throw new Error('사용자 인증이 필요합니다.');
+      }
+
+      const supabase = getSupabase();
+      if (!supabase) {
+        throw new Error('Supabase 클라이언트를 초기화할 수 없습니다.');
       }
 
       // 클라이언트 필드명을 데이터베이스 필드명으로 변환
       const dbCustomer = {
+        user_id: user.id,
         name: customer.name,
         phone: customer.phone,
         birth_date: customer.birthDate,
         skin_type: customer.skinType,
         memo: customer.memo,
-        point: customer.point,
-        purchased_products: customer.purchasedProducts,
-        user_id: user.id
+        point: customer.point || 0
       };
 
       const { data, error } = await supabase
         .from('customers')
         .insert([dbCustomer])
-        .select();
+        .select()
+        .single();
 
       if (error) throw error;
       
-      if (data && data.length > 0) {
-        // 새로 추가된 고객을 클라이언트 형식으로 변환
-        const newCustomer = {
-          id: data[0].id,
-          name: data[0].name,
-          phone: data[0].phone,
-          birthDate: data[0].birth_date,
-          skinType: data[0].skin_type,
-          memo: data[0].memo,
-          point: data[0].point,
-          createdAt: data[0].created_at,
-          updatedAt: data[0].updated_at,
-          purchasedProducts: data[0].purchased_products || []
-        };
-        
-        setCustomers(prev => [newCustomer, ...prev]);
-        
-        // 고객 추가 성공 알림
-        alert('새 고객이 성공적으로 추가되었습니다!');
-        
-        setIsFormOpen(false);
-      }
+      // 새로 추가된 고객을 클라이언트 형식으로 변환
+      const newCustomer = {
+        id: data.id,
+        name: data.name,
+        phone: data.phone,
+        birthDate: data.birth_date,
+        skinType: data.skin_type,
+        memo: data.memo,
+        point: data.point,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+        purchasedProducts: data.purchased_products || []
+      };
+      
+      setCustomers(prev => [newCustomer, ...prev]);
+      setIsFormOpen(false);
     } catch (error) {
       setError(error instanceof Error ? error.message : '고객 추가 실패');
       console.error('고객 추가 오류:', error);
@@ -190,6 +215,15 @@ const CustomerManagement: React.FC = () => {
 
   const handleUpdateCustomer = async (id: string, updates: Partial<Customer>, appointments?: Appointment[], purchaseItems?: Array<{productId: string, quantity: number}>) => {
     try {
+      if (!user) {
+        throw new Error('사용자 인증이 필요합니다.');
+      }
+
+      const supabase = getSupabase();
+      if (!supabase) {
+        throw new Error('Supabase 클라이언트를 초기화할 수 없습니다.');
+      }
+
       // 클라이언트 필드명을 데이터베이스 필드명으로 변환
       const dbUpdates: any = {};
       if (updates.name) dbUpdates.name = updates.name;
@@ -198,127 +232,80 @@ const CustomerManagement: React.FC = () => {
       if (updates.skinType) dbUpdates.skin_type = updates.skinType;
       if (updates.memo !== undefined) dbUpdates.memo = updates.memo;
       if (updates.point !== undefined) dbUpdates.point = updates.point;
-      if (updates.purchasedProducts) dbUpdates.purchased_products = updates.purchasedProducts;
 
-      // 고객 정보 업데이트
       const { data, error } = await supabase
         .from('customers')
         .update(dbUpdates)
         .eq('id', id)
-        .select();
+        .select()
+        .single();
 
       if (error) throw error;
+      
+      // 업데이트된 고객을 클라이언트 형식으로 변환
+      const updatedCustomer = {
+        id: data.id,
+        name: data.name,
+        phone: data.phone,
+        birthDate: data.birth_date,
+        skinType: data.skin_type,
+        memo: data.memo,
+        point: data.point,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+        purchasedProducts: data.purchased_products || []
+      };
+      
+      setCustomers(prev => 
+        prev.map(customer => customer.id === id ? updatedCustomer : customer)
+      );
 
-      // 시술 이력 업데이트
-      if (appointments) {
-        // 기존 시술 이력 삭제
-        await supabase
-          .from('appointments')
-          .delete()
-          .eq('customer_id', id);
-
-        // 새로운 시술 이력 추가
-        if (appointments.length > 0) {
-          const appointmentData = appointments.map(appointment => ({
-            customer_id: id,
-            product_id: appointment.productId,
-            datetime: appointment.datetime,
-            memo: appointment.memo,
-            user_id: user?.id
-          }));
-
+      // 예약 업데이트
+      if (appointments && appointments.length > 0) {
+        for (const appointment of appointments) {
           const { error: appointmentError } = await supabase
             .from('appointments')
-            .insert(appointmentData);
-
+            .update({ customer_id: id })
+            .eq('id', appointment.id);
+          
           if (appointmentError) {
-            console.error('시술 이력 저장 오류:', appointmentError);
+            console.error('예약 업데이트 오류:', appointmentError);
           }
         }
       }
 
-      // 구매 내역 업데이트
-      if (purchaseItems) {
-        console.log('구매 내역 저장 시작:', purchaseItems);
-        
-        // 기존 구매 내역 삭제
-        await supabase
-          .from('purchases')
-          .delete()
-          .eq('customer_id', id);
-
-        // 유효한 구매 내역만 필터링 (상품이 선택된 항목만)
-        const validPurchaseItems = purchaseItems.filter(item => 
-          item.productId && item.productId.trim() !== '' && item.quantity > 0
-        );
-
-        console.log('유효한 구매 내역:', validPurchaseItems);
-
-        // 새로운 구매 내역 추가
-        if (validPurchaseItems.length > 0) {
-          const purchaseData = validPurchaseItems.map(item => ({
-            customer_id: id,
-            product_id: item.productId,
-            quantity: item.quantity,
-            purchase_date: new Date().toISOString(),
-            user_id: user?.id
-          }));
-
-          console.log('저장할 구매 데이터:', purchaseData);
-
+      // 구매 내역 추가
+      if (purchaseItems && purchaseItems.length > 0) {
+        for (const item of purchaseItems) {
           const { error: purchaseError } = await supabase
             .from('purchases')
-            .insert(purchaseData);
-
+            .insert([{
+              user_id: user.id,
+              customer_id: id,
+              product_id: item.productId,
+              quantity: item.quantity
+            }]);
+          
           if (purchaseError) {
-            console.error('구매 내역 저장 오류:', purchaseError);
-            throw new Error(`구매 내역 저장 실패: ${purchaseError.message}`);
-          } else {
-            console.log('구매 내역 저장 성공');
+            console.error('구매 내역 추가 오류:', purchaseError);
           }
-        } else {
-          console.log('저장할 유효한 구매 내역이 없습니다.');
         }
       }
-      
-      if (data && data.length > 0) {
-        // 업데이트된 고객을 클라이언트 형식으로 변환
-        const updatedCustomer = {
-          id: data[0].id,
-          name: data[0].name,
-          phone: data[0].phone,
-          birthDate: data[0].birth_date,
-          skinType: data[0].skin_type,
-          memo: data[0].memo,
-          point: data[0].point,
-          createdAt: data[0].created_at,
-          updatedAt: data[0].updated_at,
-          purchasedProducts: data[0].purchased_products || []
-        };
-        
-        setCustomers(prev => prev.map(customer => 
-          customer.id === id ? updatedCustomer : customer
-        ));
 
-        // 저장 성공 알림을 즉시 표시
-        alert('고객 정보가 성공적으로 저장되었습니다!');
-        
-        // 모달 닫기
-        setIsEditModalOpen(false);
-        setSelectedCustomer(null);
-        
-        // 데이터 다시 로드 (즉시 실행)
-        loadAppointments();
-        loadPurchases();
-      }
+      setEditingCustomer(null);
     } catch (error) {
-      setError(error instanceof Error ? error.message : '고객 업데이트 실패');
-      console.error('고객 업데이트 오류:', error);
+      setError(error instanceof Error ? error.message : '고객 수정 실패');
+      console.error('고객 수정 오류:', error);
     }
   };
 
   const handleDeleteCustomer = async (id: string) => {
     try {
+      const supabase = getSupabase();
+      if (!supabase) {
+        throw new Error('Supabase 클라이언트를 초기화할 수 없습니다.');
+      }
+
       const { error } = await supabase
         .from('customers')
         .delete()
@@ -327,18 +314,13 @@ const CustomerManagement: React.FC = () => {
       if (error) throw error;
       
       setCustomers(prev => prev.filter(customer => customer.id !== id));
-      
-      // 고객 삭제 성공 알림
-      alert('고객이 성공적으로 삭제되었습니다!');
+      if (selectedCustomer?.id === id) {
+        setSelectedCustomer(null);
+      }
     } catch (error) {
       setError(error instanceof Error ? error.message : '고객 삭제 실패');
       console.error('고객 삭제 오류:', error);
     }
-  };
-
-  const handleEditClick = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setIsEditModalOpen(true);
   };
 
   if (loading) {
@@ -373,14 +355,12 @@ const CustomerManagement: React.FC = () => {
         </button>
       </div>
 
-      <CustomerTable
+      <CustomerList
         customers={customers}
         onEdit={handleEditClick}
         onDelete={handleDeleteCustomer}
-        getVoucherSummary={(customerId) => {
-          // 간단한 바우처 요약 반환 (실제로는 더 복잡한 로직 필요)
-          return '0개';
-        }}
+        onSelect={setSelectedCustomer}
+        selectedCustomer={selectedCustomer}
       />
 
       {isFormOpen && (
@@ -391,22 +371,16 @@ const CustomerManagement: React.FC = () => {
         />
       )}
 
-
-
-      {isEditModalOpen && selectedCustomer && (
-        <EditCustomerModal
-          customer={selectedCustomer}
+      {editingCustomer && (
+        <CustomerDetail
+          customer={editingCustomer}
           products={products}
           purchases={purchases}
           appointments={appointments}
-          isOpen={isEditModalOpen}
           onSubmit={(customer, appointments, purchaseItems) => {
             handleUpdateCustomer(customer.id, customer, appointments, purchaseItems);
           }}
-          onClose={() => {
-            setIsEditModalOpen(false);
-            setSelectedCustomer(null);
-          }}
+          onClose={() => setEditingCustomer(null)}
         />
       )}
     </div>

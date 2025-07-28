@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { getSupabase } from '../utils/supabase';
 import { useAuth } from './AuthContext';
-import { supabase } from '../utils/supabase';
-import { getSettingsColumns, checkColumnExists, checkTableExists } from '../utils/tableSchema';
 
 interface Settings {
   businessName: string;
@@ -19,15 +18,6 @@ interface SettingsContextType {
   isLoading: boolean;
 }
 
-const defaultSettings: Settings = {
-  businessName: '에스테틱 샵',
-  businessPhone: '02-1234-5678',
-  businessAddress: '서울시 강남구 테헤란로 123',
-  businessHours: '09:00-18:00',
-  appointmentTimeInterval: 30,
-  language: 'ko'
-};
-
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const useSettings = () => {
@@ -44,7 +34,14 @@ interface SettingsProviderProps {
 
 export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) => {
   const { user } = useAuth();
-  const [settings, setSettings] = useState<Settings>(defaultSettings);
+  const [settings, setSettings] = useState<Settings>({
+    businessName: '에스테틱 샵',
+    businessPhone: '',
+    businessAddress: '',
+    businessHours: '09:00-18:00',
+    appointmentTimeInterval: 30,
+    language: 'ko'
+  });
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -56,6 +53,12 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
   const loadSettings = async () => {
     try {
       if (!user) {
+        return;
+      }
+
+      const supabase = getSupabase();
+      if (!supabase) {
+        console.log('Supabase 클라이언트를 초기화할 수 없습니다.');
         return;
       }
 
@@ -121,6 +124,11 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         throw new Error('사용자 인증이 필요합니다.');
       }
 
+      const supabase = getSupabase();
+      if (!supabase) {
+        throw new Error('Supabase 클라이언트를 초기화할 수 없습니다.');
+      }
+
       const settingsData = {
         user_id: user.id,
         business_name: settings.businessName,
@@ -152,15 +160,15 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
     }
   };
 
-  const value: SettingsContextType = {
-    settings,
-    updateSettings,
-    saveSettings,
-    isLoading
-  };
-
   return (
-    <SettingsContext.Provider value={value}>
+    <SettingsContext.Provider
+      value={{
+        settings,
+        updateSettings,
+        saveSettings,
+        isLoading,
+      }}
+    >
       {children}
     </SettingsContext.Provider>
   );

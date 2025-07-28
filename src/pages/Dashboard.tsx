@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../utils/supabase';
+import { getSupabase } from '../utils/supabase';
 import { Customer, Appointment, Product, FinanceRecord } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 const Dashboard: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -9,21 +10,34 @@ const Dashboard: React.FC = () => {
   const [financeRecords, setFinanceRecords] = useState<FinanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    if (user) {
+      loadDashboardData();
+    }
+  }, [user]);
 
   const loadDashboardData = async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      // 모든 데이터를 병렬로 로드
+      const supabase = getSupabase();
+      if (!supabase) {
+        throw new Error('Supabase 클라이언트를 초기화할 수 없습니다.');
+      }
+
+      if (!user) {
+        throw new Error('사용자 인증이 필요합니다.');
+      }
+
+      // 모든 데이터를 병렬로 로드 (user_id 필터링 추가)
       const [customersResult, appointmentsResult, productsResult, financeResult] = await Promise.all([
-        supabase.from('customers').select('*'),
-        supabase.from('appointments').select('*'),
-        supabase.from('products').select('*'),
-        supabase.from('finance').select('*')
+        supabase.from('customers').select('*').eq('user_id', user.id),
+        supabase.from('appointments').select('*').eq('user_id', user.id),
+        supabase.from('products').select('*').eq('user_id', user.id),
+        supabase.from('finance').select('*').eq('user_id', user.id)
       ]);
 
       // 에러가 있더라도 데이터가 있으면 사용
@@ -39,6 +53,7 @@ const Dashboard: React.FC = () => {
       if (financeResult.error) console.warn('재무 데이터 로드 오류:', financeResult.error);
     } catch (error) {
       console.error('대시보드 데이터 로드 오류:', error);
+      setError(error instanceof Error ? error.message : '데이터 로드 실패');
       // 에러가 발생해도 빈 배열로 초기화하여 앱이 계속 작동하도록 함
       setCustomers([]);
       setAppointments([]);
@@ -92,6 +107,26 @@ const Dashboard: React.FC = () => {
       <div className="p-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-lg text-gray-600">데이터를 불러오는 중...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-red-600">⚠️</span>
+            <span className="font-medium text-red-800">데이터 로드 오류</span>
+          </div>
+          <p className="text-red-700 text-sm mb-3">{error}</p>
+          <button 
+            onClick={loadDashboardData}
+            className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+          >
+            다시 시도
+          </button>
         </div>
       </div>
     );
