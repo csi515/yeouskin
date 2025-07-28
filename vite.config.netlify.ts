@@ -2,10 +2,10 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
-export default defineConfig(({ command, mode }) => ({
+export default defineConfig({
   plugins: [react()],
-  // GitHub Pages 배포를 위한 base path 설정
-  base: process.env.NODE_ENV === 'production' ? '/yeouskin/' : '/',
+  // Netlify는 루트 경로에서 실행
+  base: '/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -45,7 +45,6 @@ export default defineConfig(({ command, mode }) => ({
   },
   define: {
     global: 'globalThis',
-    // 환경 변수 처리 개선
     __VITE_SUPABASE_URL__: JSON.stringify(
       process.env.VITE_SUPABASE_URL || 
       'https://wysihrzbnxhfnymtnvzj.supabase.co'
@@ -58,4 +57,4 @@ export default defineConfig(({ command, mode }) => ({
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom', '@supabase/supabase-js'],
   },
-})); 
+});
