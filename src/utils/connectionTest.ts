@@ -56,11 +56,22 @@ export const testDatabaseConnection = async (): Promise<ConnectionTestResult> =>
 
 export const testNetworkConnection = async (): Promise<ConnectionTestResult> => {
   try {
-    const response = await fetch('https://wysihrzbnxhfnymtnvzj.supabase.co/rest/v1/', {
+    const url = import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL || import.meta.env.SUPABASE_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_ANON_KEY;
+
+    if (!url || !anonKey) {
+      return {
+        success: false,
+        error: '환경변수 누락: VITE_SUPABASE_URL 또는 VITE_SUPABASE_ANON_KEY',
+        details: { hasUrl: !!url, hasKey: !!anonKey }
+      };
+    }
+
+    const response = await fetch(`${url}/rest/v1/`, {
       method: 'GET',
       headers: {
-        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5c2locnpibnhoZm55bXRudnpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTI3MjUsImV4cCI6MjA2NjA4ODcyNX0.u4UNIJikLf529VE3TSSTBzngOQ_H6OHKaUeEwYa41fY',
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5c2locnpibnhoZm55bXRudnpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTI3MjUsImV4cCI6MjA2NjA4ODcyNX0.u4UNIJikLf529VE3TSSTBzngOQ_H6OHKaUeEwYa41fY'
+        'apikey': anonKey,
+        'Authorization': `Bearer ${anonKey}`
       }
     });
 
