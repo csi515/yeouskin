@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-// GitHub Pages용 Supabase 연결 정보 (직접 명시)
-const SUPABASE_URL = 'https://wysihrzbnxhfnymtnvzj.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5c2locnpibnhoZm55bXRudnpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTI3MjUsImV4cCI6MjA2NjA4ODcyNX0.u4UNIJikLf529VE3TSSTBzngOQ_H6OHKaUeEwYa41fY';
+// Vite env-based Supabase connection (configured via Vercel project env vars)
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL || import.meta.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_ANON_KEY;
 
 // 안전한 Supabase 클라이언트 생성
 export const createSafeSupabaseClient = () => {
@@ -17,12 +17,12 @@ export const createSafeSupabaseClient = () => {
     console.log('Supabase 연결 정보 확인:', {
       url: SUPABASE_URL,
       hasAnonKey: !!SUPABASE_ANON_KEY,
-      status: 'GitHub Pages 배포용 직접 설정됨'
+      status: 'Vite env에서 로드됨'
     });
   }
 
-  if (!SUPABASE_ANON_KEY) {
-    console.error('Supabase Anon Key가 설정되지 않았습니다.');
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.error('Supabase URL 또는 Anon Key가 설정되지 않았습니다. Vercel 프로젝트 환경변수 VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY를 확인하세요.');
     return null;
   }
 

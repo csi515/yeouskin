@@ -9,8 +9,6 @@
   },
   "scripts": {
     "dev": "vite",
-    "server": "node server.js",
-    "dev:full": "concurrently \"npm run server\" \"npm run dev\"",
     "build": "vite build",
     "build:prod": "vite build --mode production",
     "preview": "vite preview",
@@ -18,9 +16,7 @@
     "type-check": "tsc --noEmit",
     "start": "vite preview --port 3001",
     "clean": "rm -rf dist",
-    "build:clean": "npm run clean && npm run build",
-    "build:github": "cross-env PUBLIC_URL=/yeouskin npm run build",
-    "deploy": "npm run build:github && gh-pages -d dist"
+    "build:clean": "npm run clean && npm run build"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.50.2",
@@ -46,7 +42,6 @@
     "eslint": "^8.26.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.3.4",
-    "gh-pages": "^6.1.1",
     "cross-env": "^7.0.3",
     "postcss": "^8.4.21",
     "supabase": "^2.30.4",
