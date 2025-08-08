@@ -2,6 +2,8 @@
 
 > 에스테틱 샵을 위한 현대적이고 사용자 친화적인 고객 관리 시스템
 
+> 이제 Vercel 배포에 최적화되었습니다. Vercel 프로젝트 환경변수에 `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`를 설정하고, 기본 빌드/출력(`npm run build`, `dist/`)으로 작동합니다. SPA 라우팅은 `vercel.json`의 rewrites로 처리됩니다.
+
 [![Deploy to GitHub Pages](https://github.com/csi515/yeouskin/actions/workflows/deploy.yml/badge.svg)](https://github.com/csi515/yeouskin/actions/workflows/deploy.yml)
 [![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen)](https://csi515.github.io/yeouskin/)
 
